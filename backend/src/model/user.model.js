@@ -75,11 +75,27 @@ export const User = {
           u.userid,
           u.fullname,
           u.profilepic,
-          mLatest.content as latestMessage,
+          -- Nếu Content NULL, trích xuất tên file gốc từ cột File
+          COALESCE(
+            mLatest.Content, 
+            CASE 
+              -- Kiểm tra File có tồn tại và có chứa dấu gạch ngang '-' không
+              WHEN mLatest.[file] IS NOT NULL AND CHARINDEX('-', mLatest.[file]) > 0 
+              -- Trích xuất chuỗi: bắt đầu từ sau dấu '-' đầu tiên
+              THEN SUBSTRING(
+                mLatest.[file], 
+                CHARINDEX('-', mLatest.[file]) + 1, 
+                LEN(mLatest.[file])
+              )
+              -- Nếu File tồn tại nhưng không có dấu '-', hiển thị toàn bộ tên file
+              WHEN mLatest.[file] IS NOT NULL THEN mLatest.[file]
+              ELSE NULL 
+            END
+          ) as latestMessage,
           mLatest.created as latestTime
         FROM Users u
         OUTER APPLY (
-          SELECT TOP 1 Content, created
+          SELECT TOP 1 Content, [file], created
           FROM Messages
           Where (senderid = @userid AND receiverid = u.userid)
              OR (receiverid = @userid AND senderid = u.userid)

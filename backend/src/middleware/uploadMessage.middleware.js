@@ -12,10 +12,17 @@ const storage = multer.diskStorage({
     const userid = req.user?.userid || 'anon'
     // receiver lấy từ req.params.id bởi route '.../send/:id'
     const receiverid = req.params.id || 'anon'
-    const name = file.originalname
-      .replace(ext, '')
-      .replace(/\s+/g, '-')
-      .slice(0, 50)
+    // Latin-1 -> Buffer -> UTF-8
+    // Tạo Buffer từ chuỗi bị lỗi, giải thích cho Buffer rằng chuỗi này
+    // hiện đang được coi là Latin-1 (để Node.js lấy đúng các byte)
+    const nameBuffer = Buffer.from(file.originalname, 'latin1')
+
+    // Chuyển Buffer trở lại thành chuỗi, giải mã nó dưới dạng UTF-8
+    const originalNameCorrect = nameBuffer.toString('utf8')
+
+    // Sử dụng path.basename an toàn hơn
+    const nameWithoutExt = path.basename(originalNameCorrect, ext)
+    const name = nameWithoutExt.replace(/\s+/g, '-').slice(0, 50)
 
     const now = new Date()
     const YY = String(now.getFullYear()).slice(-2)
