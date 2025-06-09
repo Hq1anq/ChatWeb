@@ -39,3 +39,20 @@ export function formatTimeAgo(isoUTCString) {
   // Months
   return `${diffMonths}m`
 }
+
+export const isImageFile = (filePath) => {
+  // Check ảnh/gif
+  if (!filePath) return false
+
+  // Danh các đuôi file ảnh phổ biến
+  const imageExtensions = [
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.gif',
+    '.webp',
+    '.avif',
+    '.tiff',
+  ]
+  return imageExtensions.some((ext) => filePath.toLowerCase().endsWith(ext))
+}

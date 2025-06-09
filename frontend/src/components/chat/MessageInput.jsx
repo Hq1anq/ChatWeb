@@ -76,11 +76,6 @@ const MessageInput = () => {
     }
 
     toast.success(`File selected: ${file.name}`)
-
-    // Create preview
-    // reader.onloadend = () => {
-    //   setImagePreview(reader.result)
-    // }
   }
 
   const removeFile = () => {
@@ -129,11 +124,6 @@ const MessageInput = () => {
               {fileAttachment.file.name}
             </span>
           </div>
-          {/* <img
-            src={imagePreview}
-            alt="Preview"
-            className="max-h-32 rounded-lg border-2 border-primary"
-          /> */}
           <button
             type="button"
             onClick={removeFile}
@@ -151,7 +141,7 @@ const MessageInput = () => {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="*"
           className="hidden"
           onChange={handleFileSelect}
           disabled={isSendingMessage}

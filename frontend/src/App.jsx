@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useAuthStore } from './store/authStore'
-// import ProtectedRoute from './components/ProtectedRoute'
+import { Toaster } from 'react-hot-toast'
 
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
@@ -23,6 +23,7 @@ function App() {
     <div data-theme="" className="flex flex-col h-screen w-screen">
       <Navbar />
       <main className="flex-1 overflow-auto bg-base-100">
+        <Toaster />
         <Routes>
           <Route
             path="/login"
