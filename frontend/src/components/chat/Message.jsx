@@ -1,6 +1,6 @@
 import { useAuthStore } from '../../store/authStore'
 import { useChatStore } from '../../store/chatStore'
-import { isImageFile } from '../../lib/utils'
+import { isImageFile, getFileName } from '../../lib/utils'
 import { Loader2, FileText, Download } from 'lucide-react'
 import axiosInstance from '../../lib/axios'
 
@@ -24,10 +24,7 @@ const Message = ({ fromMe, text, file, time, isTemp }) => {
       )}`
 
   // LOGIC MỚI: Extract tên file gốc (originName) bằng split và slice
-  const fullFileName = file ? file.substring(file.lastIndexOf('/') + 1) : ''
-  // Tách chuỗi theo '-', loại bỏ phần tử đầu tiên (metadata), và nối phần còn lại
-  const parts = fullFileName.split('-')
-  const fileName = parts.length > 1 ? parts.slice(1) : fullFileName
+  const fileName = getFileName(file)
   const isImage = isImageFile(file)
   const fileUrl = `${serverUrl}${file}`
 

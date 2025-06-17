@@ -56,3 +56,13 @@ export const isImageFile = (filePath) => {
   ]
   return imageExtensions.some((ext) => filePath.toLowerCase().endsWith(ext))
 }
+
+// '/messages/251201.1112.1.3-abc.png' -> 'abc.png'
+export const getFileName = (filePath) => {
+  const fullFileName = filePath
+    ? filePath.substring(filePath.lastIndexOf('/') + 1)
+    : ''
+  // Tách chuỗi theo '-', loại bỏ phần tử đầu tiên (metadata), và nối phần còn lại
+  const parts = fullFileName.split('-')
+  return parts.length > 1 ? parts.slice(1) : fullFileName
+}

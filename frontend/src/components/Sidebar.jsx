@@ -1,6 +1,4 @@
-import axiosInstance from '../lib/axios'
 import { useEffect, useState } from 'react'
-import { Search } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { useChatStore } from '../store/chatStore'
 import { formatTimeAgo } from '../lib/utils'

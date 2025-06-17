@@ -16,7 +16,7 @@ const Navbar = () => {
   }
 
   return (
-    <div className="navbar justify-between px-4 bg-base-300 shadow-lg sticky top-0 z-50 border-b-2 border-[color-mix(in oklab, var(--color-base-content) 10%, transparent)]">
+    <div className="navbar justify-between px-4 bg-base-300 shadow-lg sticky top-0 z-50 border-b-2 border-b-gray-500">
       {/*Tên ứng dụng */}
       <Link to="/" className="btn btn-ghost text-2xl font-bold text-primary">
         <MessageSquareText size={28} className="mr-2" />
@@ -46,7 +46,9 @@ const Navbar = () => {
                 src={
                   user?.profilepic
                     ? `${import.meta.env.VITE_SERVER_URL}${user.profilepic}`
-                    : '/avatar.avif'
+                    : `https://placehold.co/600x600/E5E7EB/333333?text=${user.fullname.charAt(
+                        0
+                      )}`
                 }
               />
             </div>

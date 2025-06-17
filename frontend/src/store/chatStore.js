@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import axiosInstance from '../lib/axios'
 import toast from 'react-hot-toast'
 import { useAuthStore } from './authStore'
+import { getFileName } from '../lib/utils'
 
 export const useChatStore = create((set, get) => ({
   messages: [],
@@ -58,7 +59,7 @@ export const useChatStore = create((set, get) => ({
       senderid: 'me', // Sẽ được thay thế bằng userid thật
       receiverid: selectedUser.userid,
       content: message,
-      image: fileAttachment ? fileAttachment.file.name : null,
+      file: fileAttachment ? fileAttachment.file.name : null,
       created: new Date().toISOString(),
       isTemp: true, // Đánh dấu là tin nhắn tạm
     }
@@ -88,6 +89,8 @@ export const useChatStore = create((set, get) => ({
         }
       )
 
+      get().updateSidebarUser(response.data)
+
       // Thay thế tin nhắn tạm bằng tin nhắn thật từ server
       set({
         messages: messages
@@ -113,15 +116,57 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  // Cập nhật sidebar list (users array)
+  updateSidebarUser: (message) => {
+    set((state) => {
+      const { user } = useAuthStore.getState() // user hiện tại
+      const targetUserId =
+        message.senderid === user.userid ? message.receiverid : message.senderid // người còn lại
+      const latestMessageContent =
+        message.content || (message.file ? getFileName(message.file) : '')
+
+      let updatedUsers = [...state.users]
+      let targetUserIndex = -1
+
+      // Tìm user trong danh sách sidebar
+      const targetUser = updatedUsers.find((u, index) => {
+        if (u.userid === targetUserId) {
+          targetUserIndex = index
+          return true
+        }
+        return false
+      })
+
+      if (targetUser) {
+        const updatedTargetUser = {
+          ...targetUser,
+          latestMessage: latestMessageContent,
+          latestTime: message.created,
+        }
+
+        // xóa user khỏi vị trí hiện tại
+        updatedUsers.splice(targetUserIndex, 1)
+
+        // thêm user vào đầu danh sách (reorder)
+        updatedUsers.unshift(updatedTargetUser)
+      }
+
+      return { users: updatedUsers }
+    })
+  },
+
   // Thêm tin nhắn mới từ socket (realtime)
   onMessage: () => {
-    const { selectedUser } = get()
+    const { selectedUser, updateSidebarUser } = get()
 
     if (!selectedUser) return
 
     const socket = useAuthStore.getState().socket
 
     socket.on('newMessage', (newMessage) => {
+      // Caapj nhaatj side bar khi có tin nhắn mới
+      updateSidebarUser(newMessage)
+
       if (newMessage.senderid === selectedUser.userid)
         set({ messages: [...get().messages, newMessage] })
     })
