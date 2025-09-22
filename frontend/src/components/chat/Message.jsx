@@ -409,13 +409,13 @@ const Message = ({
           )}
 
           {/* Bong bóng chat */}
-          <div className={`chat-bubble flex flex-col ${bubbleColor} w-fit max-w-xs md:max-w-sm lg:max-w-md`}>
+          <div className={`${file ? '' : `chat-bubble ${bubbleColor}`} flex flex-col w-fit max-w-xs md:max-w-sm lg:max-w-md`}>
             {/* Reply preview */}
             {replyTo && <ReplyPreview replyTo={replyTo} fromMe={fromMe} />}
 
             {/* Hiển thị ảnh nếu có */}
             {file && (
-              <div className="mb-2">
+              <div className="">
                 {isImage ? (
                   <img
                     src={fileUrl}
@@ -424,13 +424,13 @@ const Message = ({
                     onClick={() => setShowLightbox(true)}
                   />
                 ) : (
-                  <div className="flex items-center justify-between gap-2 p-2 bg-base-100 rounded-lg border border-base-300 transition-colors">
+                  <div className="flex items-center justify-between gap-2 p-2 bg-base-300 hover:bg-base-200 rounded-lg border border-base-300 transition-colors">
                     <a
                       href={fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       download={fileName}
-                      className="flex items-center gap-2 p-2 bg-base-100 rounded-lg text-primary hover:bg-base-200 transition-colors"
+                      className="flex items-center gap-2 p-2 rounded-lg text-primary"
                       title={`Tải xuống ${fileName}`}
                     >
                       <FileText size={20} className="shrink-0 text-base-content/80" />
