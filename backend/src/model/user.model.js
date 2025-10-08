@@ -31,4 +31,13 @@ export const User = {
       .query('SELECT * FROM Users WHERE email = @email')
     return result.recordset[0]
   },
+
+  async findById(userid) {
+    const pool = await getConnection()
+    const result = await pool
+      .request()
+      .input('userid', sql.Int, userid)
+      .query('SELECT * FROM Users WHERE userid = @userid')
+    return result.recordset[0]
+  },
 }
