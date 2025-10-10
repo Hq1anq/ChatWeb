@@ -54,4 +54,14 @@ export const User = {
       `)
     return result.recordset[0]
   },
+
+  async getExcept(excludeUserId) {
+    const pool = await getConnection()
+    const result = await pool
+      .request()
+      .input('excludeUserId', sql.Int, excludeUserId).query(`
+        SELECT userid, email, fullname, profilepic
+        FROM Users WHERE userid != @excludeUserId`)
+    return result.recordset
+  },
 }
