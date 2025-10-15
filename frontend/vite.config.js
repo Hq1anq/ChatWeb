@@ -21,8 +21,8 @@ export default defineConfig({
   ],
   server: {
     https: {
-      key: '../.backend/backend/cert.key',
-      cert: '../.backend/backend/cert.crt',
+      key: '../backend/cert.key',
+      cert: '../backend/cert.crt',
     },
   },
 })
