@@ -40,15 +40,59 @@ export const initializeSocketIO = (httpsServer, expressApp) => {
       }
     }
 
-    // === MỚI: Lắng nghe sự kiện Client xin join nhóm mới ===
+    // === Lắng nghe sự kiện Client xin join nhóm mới ===
     socket.on('join-group', (groupId) => {
       const roomName = `group_${groupId}`
       socket.join(roomName)
       console.log(`User ${userId} just joined room: ${roomName}`)
     })
-    // =======================================================
 
     io.emit('online-users', Object.keys(userSocketMap))
+
+    // --- VIDEO CALL ---
+    socket.on('call-offer', (data) => {
+      const receiverSocketId = getReceiverSocketId(data.targetUserId)
+      if (receiverSocketId) {
+        // Gửi thông báo có cuộc gọi đến cho người nhận
+        io.to(receiverSocketId).emit('call-received', {
+          sender: data.sender,
+          offer: data.offer, // SDP Offer từ WebRTC
+          callId: data.callId,
+        })
+      }
+    })
+    socket.on('webrtc-signal', (data) => {
+      const receiverSocketId = getReceiverSocketId(data.targetUserId)
+      if (receiverSocketId) {
+        // Trung chuyển ICE Candidates hoặc Answer SDP
+        io.to(receiverSocketId).emit('webrtc-signal', data)
+      }
+    })
+
+    socket.on('call-accepted', (data) => {
+      const receiverSocketId = getReceiverSocketId(data.targetUserId)
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit('call-answered', { callId: data.callId })
+      }
+    })
+    socket.on('call-rejected', (data) => {
+      const receiverSocketId = getReceiverSocketId(data.targetUserId)
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit('call-rejected', {
+          callId: data.callId,
+          isError: data.isError,
+        })
+      }
+    })
+    socket.on('call-ended', (data) => {
+      const receiverSocketId = getReceiverSocketId(data.targetUserId)
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit('call-ended', {
+          callId: data.callId,
+          senderId: userId,
+        })
+      }
+    })
 
     socket.on('disconnect', () => {
       if (userId) delete userSocketMap[userId]
