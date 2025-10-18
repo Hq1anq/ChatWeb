@@ -56,7 +56,7 @@ const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [],s
 
   const { user } = useAuthStore()
   const { selectedUser } = useChatStore()
-  const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000'
+  const serverUrl = import.meta.env.VITE_SERVER_URL
 
   const targetUser = fromMe ? user : selectedUser
 
@@ -205,7 +205,7 @@ const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [],s
                       title={`Tải xuống ${fileName}`}
                     >
                       <FileText size={20} className="shrink-0 text-base-content/80" />
-                      <span className="truncate max-w-[150px] font-medium text-sm text-base-content/80">
+                      <span className="truncate max-w-37.5 font-medium text-sm text-base-content/80">
                         {fileName}
                       </span>
                     </a>
@@ -224,7 +224,7 @@ const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [],s
 
             {/* Hiển thị text */}
             {text && (
-              <p className="whitespace-pre-wrap break-words text-left min-w-0 inline">
+              <p className="whitespace-pre-wrap wrap-break-word text-left min-w-0 inline">
                 {text}
               </p>
             )}

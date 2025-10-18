@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { Bell, Settings, User, LogOut, MessageSquareText } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useAuthStore } from '../store/authStore'
 import { useNotificationStore } from '../store/notificationStore'
 import { useChatStore } from '../store/chatStore' // Import chatStore để clear tin nhắn
@@ -93,7 +93,7 @@ const Navbar = () => {
               </div>
 
               <div tabIndex={0} className="mt-3 z-1 card card-compact dropdown-content w-80 bg-base-100 shadow-xl border border-base-200">
-                <div className="card-body p-0 max-h-[400px] overflow-y-auto">
+                <div className="card-body p-0 max-h-100 overflow-y-auto">
                   <div className="p-3 border-b border-base-200 font-bold bg-base-200/50 sticky top-0 backdrop-blur-sm">
                     Thông báo
                   </div>

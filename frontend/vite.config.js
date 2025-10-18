@@ -16,9 +16,13 @@ export default defineConfig({
       ],
       
       // 3. Đặt daisyui VÀO BÊN TRONG mảng 'plugins' của tailwind
-      plugins: [
-        daisyui 
-      ]
-    })
+      plugins: [daisyui],
+    }),
   ],
+  server: {
+    https: {
+      key: '../.backend/backend/cert.key',
+      cert: '../.backend/backend/cert.crt',
+    },
+  },
 })
