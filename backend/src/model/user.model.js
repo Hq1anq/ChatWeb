@@ -9,7 +9,7 @@ export const User = {
       .input('email', sql.NVarChar(50), email)
       .input('fullname', sql.NVarChar(30), fullname)
       .input('password', sql.NVarChar(100), password)
-      .input('profilepic', sql.NVarChar(100), profilepic).query(`
+      .input('profilepic', sql.NVarChar(sql.MAX), profilepic).query(`
 				INSERT INTO Users (email, fullname, [password], profilepic)
         OUTPUT INSERTED.*
 				VALUES (@email, @fullname, @password, @profilepic);
