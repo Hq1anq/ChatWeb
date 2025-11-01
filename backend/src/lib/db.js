@@ -1,27 +1,27 @@
-import sql from "mssql";
+import sql from 'mssql'
 
 const config = {
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
-  server: "localhost",
+  server: 'localhost',
   database: process.env.DB_NAME,
   port: parseInt(process.env.DB_PORT) || 1433,
   options: {
-    trustServerCertificate: true
-  }
-};
+    trustServerCertificate: true,
+  },
+}
 
-let pool;
+let pool
 
 export const getConnection = async () => {
   try {
     if (!pool) {
-      pool = await sql.connect(config);
-      console.log("✔️ ", "Connected to MSSQL Database");
+      pool = await sql.connect(config)
+      console.log('✔️ ', 'Connected to MSSQL Database')
     }
-    return pool;
+    return pool
   } catch (err) {
-    console.error("❌ ", "Database connection failed:", err);
-    throw err;
+    console.error('❌ ', 'Database connection failed:', err)
+    throw err
   }
-};
+}

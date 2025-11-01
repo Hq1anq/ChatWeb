@@ -1,23 +1,11 @@
-import express from "express";
-import { getConnection } from "./lib/db.js";
+import express from 'express'
 
-const app = express();
+import authRoutes from './route/auth.route.js'
 
-app.get('/', (req, res) => {
-  return res.json("BACKEND");
-});
+const app = express()
 
-app.get("/users", async (req, res) => {
-  try {
-    const pool = await getConnection();
-    const result = await pool.request().query("SELECT * FROM Users");
-    res.json(result.recordset);
-  } catch (err) {
-    console.error("❌ Error fetching users:", err);
-    res.status(500).send("Server error");
-  }
-});
+app.use('/api/auth', authRoutes)
 
 app.listen(process.env.PORT, () => {
-    console.log("server is running on port", process.env.PORT)
-});
+  console.log('server is running on port', process.env.PORT)
+})
