@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { User, UserCircle, Lock } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { User, UserCircle, Lock, AlertCircle } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
 
 const SignUpPage = () => {
-  // Sử dụng state để lưu trữ dữ liệu form
+  const navigate = useNavigate();
+  const { signup, isLoading, error, clearError } = useAuthStore();
+  
   const [formData, setFormData] = useState({
     fullName: '',
     username: '',
@@ -11,26 +14,46 @@ const SignUpPage = () => {
     confirmPassword: '',
   });
 
-  // Hàm xử lý khi thay đổi input
+  const [validationError, setValidationError] = useState('');
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
+    // Clear errors khi user bắt đầu nhập
+    if (error) clearError();
+    if (validationError) setValidationError('');
   };
 
-  // Hàm xử lý khi submit form (hiện tại chỉ log ra console)
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Thêm logic validate (ví dụ: password === confirmPassword)
+    
+    // Validate password match
     if (formData.password !== formData.confirmPassword) {
-      alert('Mật khẩu xác nhận không khớp!');
+      setValidationError('Mật khẩu xác nhận không khớp!');
       return;
     }
-    console.log('Dữ liệu đăng ký:', formData);
-    // TODO: Thêm logic gọi API đăng ký ở đây
+
+    // Validate password length
+    if (formData.password.length < 6) {
+      setValidationError('Mật khẩu phải có ít nhất 6 ký tự!');
+      return;
+    }
+
+    const result = await signup({
+      fullName: formData.fullName,
+      username: formData.username,
+      password: formData.password
+    });
+    
+    if (result.success) {
+      navigate('/'); // Chuyển về trang home sau khi đăng ký thành công
+    }
   };
+
+  const displayError = validationError || error;
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-base-200">
@@ -39,6 +62,14 @@ const SignUpPage = () => {
           <h2 className="card-title justify-center text-2xl font-bold">
             Tạo tài khoản
           </h2>
+
+          {/* Hiển thị thông báo lỗi */}
+          {displayError && (
+            <div className="alert alert-error mb-4">
+              <AlertCircle size={20} />
+              <span>{displayError}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             {/* Trường Họ và Tên */}
@@ -55,6 +86,7 @@ const SignUpPage = () => {
                   placeholder="Nhập họ và tên"
                   value={formData.fullName}
                   onChange={handleChange}
+                  disabled={isLoading}
                   required
                 />
               </label>
@@ -71,9 +103,10 @@ const SignUpPage = () => {
                   type="text"
                   name="username"
                   className="grow"
-                  placeholder="Nhâp tên đăng nhập"
+                  placeholder="Nhập tên đăng nhập"
                   value={formData.username}
                   onChange={handleChange}
+                  disabled={isLoading}
                   required
                 />
               </label>
@@ -93,6 +126,7 @@ const SignUpPage = () => {
                   placeholder="Nhập mật khẩu"
                   value={formData.password}
                   onChange={handleChange}
+                  disabled={isLoading}
                   required
                 />
               </label>
@@ -112,6 +146,7 @@ const SignUpPage = () => {
                   placeholder="Nhập lại mật khẩu"
                   value={formData.confirmPassword}
                   onChange={handleChange}
+                  disabled={isLoading}
                   required
                 />
               </label>
@@ -119,7 +154,19 @@ const SignUpPage = () => {
 
             {/* Nút Đăng ký */}
             <div className="form-control mt-6">
-              <button className="btn btn-primary w-full">Đăng ký</button>
+              <button 
+                className="btn btn-primary w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="loading loading-spinner"></span>
+                    Đang xử lý...
+                  </>
+                ) : (
+                  'Đăng ký'
+                )}
+              </button>
             </div>
           </form>
 

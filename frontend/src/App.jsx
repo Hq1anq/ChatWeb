@@ -1,26 +1,53 @@
-import './App.css';
-import Navbar from './components/Navbar';
-import {Routes,Route} from "react-router-dom";
-import HomePage from "./pages/HomePage";
-import LoginPage from "./pages/LoginPage";
-import ProfilePage from "./pages/ProfilePage";
-import SettingsPage from "./pages/SettingsPage";
-import SignUpPage from "./pages/SignUpPage";
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useAuthStore } from './store/authStore';
+import ProtectedRoute from './components/ProtectedRoute';
 
-const App = () => {
+import LoginPage from './pages/LoginPage';
+import SignUpPage from './pages/SignUpPage';
+import HomePage from './pages/HomePage';
+import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
+
+function App() {
+  const { checkAuth, user } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   return (
-    <div>
-      <Navbar/>
+    <BrowserRouter>
       <Routes>
-        <Route path="/" element={<HomePage/>}/>
-        <Route path="/signup" element={<SignUpPage/>}/>
-        <Route path="/login" element={<LoginPage/>}/>
-        <Route path="/settings" element={<SettingsPage/>}/>
-        <Route path="/profile" element={<ProfilePage/>}/>
+        <Route 
+          path="/login" 
+          element={user ? <Navigate to="/" /> : <LoginPage />} 
+        />
+        <Route 
+          path="/signup" 
+          element={user ? <Navigate to="/" /> : <SignUpPage />} 
+        />
         
+        <Route path="/" element={
+          <ProtectedRoute>
+            <HomePage />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/settings" element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        } />
       </Routes>
-    </div>
-  );  
-};
+    </BrowserRouter>
+  );
+}
+
 export default App;
