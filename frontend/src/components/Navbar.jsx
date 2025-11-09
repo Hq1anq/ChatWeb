@@ -30,6 +30,8 @@ const Navbar = () => {
 
       {/*Icon và User Dropdown */}
       <div className="flex-none gap-2">
+        {/* Theme Toggle Component */}
+        <ThemeToggle />
         {/* Icon thông báo */}
         <button className="btn btn-ghost btn-circle">
           <div className="indicator">
