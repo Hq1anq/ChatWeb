@@ -46,7 +46,7 @@ function App() {
         </ProtectedRoute>
       } />
 
-      {/* Route 404 */}
+      {/* Route 404*/}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
