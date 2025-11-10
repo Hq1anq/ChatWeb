@@ -1,59 +1,59 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { User, UserCircle, Lock, AlertCircle } from 'lucide-react';
-import { useAuthStore } from '../store/authStore';
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { User, UserCircle, Lock, AlertCircle } from 'lucide-react'
+import { useAuthStore } from '../store/authStore'
 
 const SignUpPage = () => {
-  const navigate = useNavigate();
-  const { signup, isLoading, error, clearError } = useAuthStore();
-  
+  const navigate = useNavigate()
+  const { signup, isLoading, error, clearError } = useAuthStore()
+
   const [formData, setFormData] = useState({
     fullName: '',
-    username: '',
+    email: '',
     password: '',
     confirmPassword: '',
-  });
+  })
 
-  const [validationError, setValidationError] = useState('');
+  const [validationError, setValidationError] = useState('')
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
-    }));
+    }))
     // Clear errors khi user bắt đầu nhập
-    if (error) clearError();
-    if (validationError) setValidationError('');
-  };
+    if (error) clearError()
+    if (validationError) setValidationError('')
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     // Validate password match
     if (formData.password !== formData.confirmPassword) {
-      setValidationError('Mật khẩu xác nhận không khớp!');
-      return;
+      setValidationError('Mật khẩu xác nhận không khớp!')
+      return
     }
 
     // Validate password length
     if (formData.password.length < 6) {
-      setValidationError('Mật khẩu phải có ít nhất 6 ký tự!');
-      return;
+      setValidationError('Mật khẩu phải có ít nhất 6 ký tự!')
+      return
     }
 
     const result = await signup({
       fullName: formData.fullName,
-      username: formData.username,
-      password: formData.password
-    });
-    
-    if (result.success) {
-      navigate('/'); // Chuyển về trang home sau khi đăng ký thành công
-    }
-  };
+      email: formData.email,
+      password: formData.password,
+    })
 
-  const displayError = validationError || error;
+    if (result.success) {
+      navigate('/') // Chuyển về trang home sau khi đăng ký thành công
+    }
+  }
+
+  const displayError = validationError || error
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-base-200">
@@ -92,19 +92,19 @@ const SignUpPage = () => {
               </label>
             </div>
 
-            {/* Trường Tên đăng nhập */}
+            {/* Trường Email */}
             <div className="form-control mt-4">
               <label className="label">
-                <span className="label-text">Tên đăng nhập</span>
+                <span className="label-text">Email</span>
               </label>
               <label className="input input-bordered flex items-center gap-2 w-full">
                 <User size={16} />
                 <input
                   type="text"
-                  name="username"
+                  name="email"
                   className="grow"
-                  placeholder="Nhập tên đăng nhập"
-                  value={formData.username}
+                  placeholder="Nhập email"
+                  value={formData.email}
                   onChange={handleChange}
                   disabled={isLoading}
                   required
@@ -154,10 +154,7 @@ const SignUpPage = () => {
 
             {/* Nút Đăng ký */}
             <div className="form-control mt-6">
-              <button 
-                className="btn btn-primary w-full"
-                disabled={isLoading}
-              >
+              <button className="btn btn-primary w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <span className="loading loading-spinner"></span>
@@ -180,7 +177,7 @@ const SignUpPage = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default SignUpPage;
+export default SignUpPage

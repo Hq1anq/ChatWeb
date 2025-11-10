@@ -1,36 +1,37 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { User, Lock, AlertCircle } from 'lucide-react';
-import { useAuthStore } from '../store/authStore';
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { User, Lock, AlertCircle } from 'lucide-react'
+import { useAuthStore } from '../store/authStore'
 
 const LoginPage = () => {
-  const navigate = useNavigate();
-  const { login, isLoading, error, clearError } = useAuthStore();
-  
+  const navigate = useNavigate()
+  const { login, isLoading, error, clearError } = useAuthStore()
+
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: '',
-  });
+  })
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
-    }));
+    }))
     // Clear error khi user bắt đầu nhập
-    if (error) clearError();
-  };
+    if (error) clearError()
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    const result = await login(formData);
-    
-    if (result.success) {
-      navigate('/'); // Chuyển về trang home sau khi đăng nhập thành công
-    }
-  };
+    e.preventDefault()
+
+    login(formData)
+    // const result = await login(formData)
+
+    // if (result.success) {
+    //   navigate('/') // Chuyển về trang home sau khi đăng nhập thành công
+    // }
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-base-200">
@@ -49,19 +50,19 @@ const LoginPage = () => {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Trường Tên đăng nhập */}
+            {/* Trường Email */}
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Tên đăng nhập</span>
+                <span className="label-text">Email</span>
               </label>
               <label className="input input-bordered flex items-center gap-2 w-full">
                 <User size={18} />
                 <input
                   type="text"
-                  name="username"
+                  name="email"
                   className="grow"
-                  placeholder="Nhập tên đăng nhập"
-                  value={formData.username}
+                  placeholder="Nhập email"
+                  value={formData.email}
                   onChange={handleChange}
                   disabled={isLoading}
                   required
@@ -91,10 +92,7 @@ const LoginPage = () => {
 
             {/* Nút Đăng nhập */}
             <div className="form-control mt-6">
-              <button 
-                className="btn btn-primary w-full" 
-                disabled={isLoading}
-              >
+              <button className="btn btn-primary w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <span className="loading loading-spinner"></span>
@@ -117,7 +115,7 @@ const LoginPage = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default LoginPage;
+export default LoginPage
