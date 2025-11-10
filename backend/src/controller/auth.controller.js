@@ -3,38 +3,38 @@ import bcrypt from 'bcryptjs'
 import generateToken from '../lib/utils.js'
 
 export async function signup(req, res) {
-  const { Fullname, Email, Password } = req.body
+  const { fullname, email, password } = req.body
 
   try {
-    if (!Fullname || !Email || !Password)
+    if (!fullname || !email || !password)
       return res.status(400).json({ message: 'All fields are required' })
 
-    if (Password.length < 6)
+    if (password.length < 6)
       return res
         .status(400)
         .json({ message: 'Password must be at least 6 characters' })
 
-    const user = await User.findByEmail(Email)
+    const user = await User.findByEmail(email)
 
     if (user)
       return res.status(400).json({ message: 'Email is already registered' })
 
     const salt = await bcrypt.genSalt(10)
-    const hashedPassword = await bcrypt.hash(Password, salt)
+    const hashedPassword = await bcrypt.hash(password, salt)
 
     const newUser = await User.create({
-      Email,
-      Fullname,
-      Password: hashedPassword,
+      email,
+      fullname,
+      password: hashedPassword,
     })
 
     if (newUser) {
-      generateToken(newUser.UserID, res)
+      generateToken(newUser.userid, res)
       return res.status(201).json({
-        UserID: newUser.UserID,
-        FullName: newUser.FullName,
-        Email: newUser.Email,
-        ProfilePic: newUser.ProfilePic,
+        userid: newUser.userid,
+        fullname: newUser.fullname,
+        email: newUser.email,
+        profilepic: newUser.profilepic,
       })
     } else res.status(400).json({ messave: 'Invalid user data' })
   } catch (error) {
@@ -44,23 +44,23 @@ export async function signup(req, res) {
 }
 
 export async function login(req, res) {
-  const { Email, Password } = req.body
+  const { email, password } = req.body
 
   try {
-    const user = await User.findByEmail(Email)
+    const user = await User.findByEmail(email)
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password.' })
     }
-    const isMatch = await bcrypt.compare(Password, user.Password)
+    const isMatch = await bcrypt.compare(password, user.password)
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid email or password.' })
     }
-    generateToken(user.UserID, res)
+    generateToken(user.userid, res)
     return res.status(200).json({
-      UserID: user.UserID,
-      FullName: user.FullName,
-      Email: user.Email,
-      ProfilePic: user.ProfilePic,
+      userid: user.userid,
+      fullname: user.fullname,
+      email: user.email,
+      profilepic: user.profilepic,
     })
   } catch (error) {
     console.error('Error in login controller:', error.message)
@@ -74,6 +74,15 @@ export const logout = (req, res) => {
     res.status(200).json({ message: 'Logged out successfully.' })
   } catch (error) {
     console.error('Error in logout controller:', error.message)
+    res.status(500).json({ message: 'Internal Server Error.' })
+  }
+}
+
+export const checkAuth = (req, res) => {
+  try {
+    res.status(200).json(req.user)
+  } catch (error) {
+    console.log('Error in checkAuth controller:', error.message)
     res.status(500).json({ message: 'Internal Server Error.' })
   }
 }

@@ -2,17 +2,17 @@ import { getConnection } from '../lib/db.js'
 import sql from 'mssql'
 
 export const User = {
-  async create({ Email, Fullname, Password, ProfilePic = '' }) {
+  async create({ email, fullname, password, profilepic = '' }) {
     const pool = await getConnection()
     const result = await pool
       .request()
-      .input('Email', sql.NVarChar(50), Email)
-      .input('FullName', sql.NVarChar(30), Fullname)
-      .input('Password', sql.NVarChar(100), Password)
-      .input('ProfilePic', sql.NVarChar(100), ProfilePic).query(`
-				INSERT INTO Users (Email, FullName, [Password], ProfilePic)
+      .input('email', sql.NVarChar(50), email)
+      .input('fullname', sql.NVarChar(30), fullname)
+      .input('password', sql.NVarChar(100), password)
+      .input('profilepic', sql.NVarChar(100), profilepic).query(`
+				INSERT INTO Users (email, fullname, [password], profilepic)
         OUTPUT INSERTED.*
-				VALUES (@Email, @FullName, @Password, @ProfilePic);
+				VALUES (@email, @fullname, @password, @profilepic);
 			`)
     return result.recordset[0]
   },
@@ -23,12 +23,21 @@ export const User = {
     return result.recordset
   },
 
-  async findByEmail(Email) {
+  async findByEmail(email) {
     const pool = await getConnection()
     const result = await pool
       .request()
-      .input('Email', sql.NVarChar(50), Email)
-      .query('SELECT * FROM Users WHERE Email = @Email')
+      .input('email', sql.NVarChar(50), email)
+      .query('SELECT * FROM Users WHERE email = @email')
+    return result.recordset[0]
+  },
+
+  async findById(userid) {
+    const pool = await getConnection()
+    const result = await pool
+      .request()
+      .input('userid', sql.Int, userid)
+      .query('SELECT * FROM Users WHERE userid = @userid')
     return result.recordset[0]
   },
 }
