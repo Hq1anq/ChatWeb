@@ -1,10 +1,9 @@
 import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
+import { app, server } from './lib/socket.js'
 
 import authRoutes from './route/auth.route.js'
-
-const app = express()
 
 app.use(express.json())
 app.use(cookieParser())
@@ -18,6 +17,6 @@ app.use(
 
 app.use('/api/auth', authRoutes)
 
-app.listen(process.env.PORT, () => {
+server.listen(process.env.PORT, () => {
   console.log('server is running on port', process.env.PORT)
 })
