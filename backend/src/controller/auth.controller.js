@@ -86,3 +86,31 @@ export const checkAuth = (req, res) => {
     res.status(500).json({ message: 'Internal Server Error.' })
   }
 }
+
+export const updateProfilePic = async (req, res) => {
+  try {
+    const userId = req.user.userid
+    const profilepic = req.file
+      ? `/profilepics/${req.file.filename}`
+      : req.user.profilepic
+
+    if (!profilepic) {
+      return res.status(400).json({ message: 'Profile picture is required' })
+    }
+
+    const updatedUser = await User.updateProfilePic(userId, profilepic)
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    res.status(200).json({
+      userid: updatedUser.userid,
+      fullname: updatedUser.fullname,
+      email: updatedUser.email,
+      profilepic: updatedUser.profilepic,
+    })
+  } catch (error) {
+    console.log('Error in updateProfile controller:', error.message)
+    res.status(500).json({ message: 'Internal Server Error.' })
+  }
+}

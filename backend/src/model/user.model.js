@@ -40,4 +40,18 @@ export const User = {
       .query('SELECT * FROM Users WHERE userid = @userid')
     return result.recordset[0]
   },
+
+  async updateProfilePic(userid, profilepic) {
+    const pool = await getConnection()
+    const result = await pool
+      .request()
+      .input('userid', sql.Int, userid)
+      .input('profilepic', sql.NVarChar(100), profilepic).query(`
+        UPDATE Users
+        SET profilepic = @profilepic
+        WHERE userid = @userid;
+        SELECT * FROM Users WHERE userid = @userid;
+      `)
+    return result.recordset[0]
+  },
 }

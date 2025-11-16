@@ -7,10 +7,11 @@ import authRoutes from './route/auth.route.js'
 
 app.use(express.json())
 app.use(cookieParser())
+app.use('/profilepics', express.static('public/profilepics'))
 
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    origin: process.env.CLIENT_URL,
     credentials: true,
   })
 )

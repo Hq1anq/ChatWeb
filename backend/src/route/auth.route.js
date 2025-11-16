@@ -6,8 +6,10 @@ import {
   login,
   logout,
   checkAuth,
+  updateProfilePic,
 } from '../controller/auth.controller.js'
 import protectedRoute from '../middleware/auth.middleware.js'
+import upload from '../middleware/upload.middleware.js'
 
 const router = express.Router()
 
@@ -20,6 +22,13 @@ router.post('/login', login)
 router.post('/logout', logout)
 
 router.get('/me', protectedRoute, checkAuth)
+
+router.put(
+  '/update-profile/pic',
+  protectedRoute,
+  upload.single('profilepic'),
+  updateProfilePic
+)
 
 router.get('/users', async (req, res) => {
   try {
