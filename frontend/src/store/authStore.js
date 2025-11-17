@@ -4,15 +4,15 @@ import axiosInstance from '../lib/axios'
 import { toast } from 'react-hot-toast'
 import { io } from 'socket.io-client'
 
-const BASE_URL = 'http://localhost:5000'
-
 export const useAuthStore = create(
   persist(
     (set, get) => ({
       user: null,
       isLoading: false,
+      isUpdatingProfile: false,
       error: null,
       socket: null,
+      onlineUsers: [],
 
       // Đăng ký
       signup: async (data) => {
@@ -95,6 +95,30 @@ export const useAuthStore = create(
         }
       },
 
+      updateProfilePic: async (data) => {
+        set({ isUpdatingProfile: true, error: null })
+        try {
+          const response = await axiosInstance.put(
+            '/auth/update-profile/pic',
+            data,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            }
+          )
+          console.log(response)
+          set({ user: response.data })
+          toast.success('Cập nhật hồ sơ thành công!')
+          return { success: true }
+        } catch (error) {
+          const errorMessage =
+            error.response?.data?.message || 'Cập nhật hồ sơ thất bại'
+          set({ error: errorMessage })
+          return { success: false, error: errorMessage }
+        }
+      },
+
       // Clear error
       clearError: () => set({ error: null }),
 
@@ -102,10 +126,18 @@ export const useAuthStore = create(
         const { user } = get()
         if (!user || get().socket?.connected) return
 
-        const socket = io(BASE_URL)
+        const socket = io(import.meta.env.VITE_SERVER_URL, {
+          query: {
+            userId: user.userid,
+          },
+        })
         socket.connect()
 
         set({ socket: socket })
+
+        socket.on('online-users', (userIds) => {
+          set({ onlineUsers: userIds })
+        })
       },
       disconnectSocket: () => {
         if (get().socket?.connected) get().socket.disconnect()

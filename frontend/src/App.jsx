@@ -13,13 +13,11 @@ import NotFoundPage from './pages/NotFoundPage'
 import Navbar from './components/Navbar'
 
 function App() {
-  const { checkAuth, user } = useAuthStore()
+  const { checkAuth, user, onlineUsers } = useAuthStore()
 
   useEffect(() => {
     checkAuth()
   }, [checkAuth])
-
-  console.log({ user })
 
   return (
     <div data-theme="">

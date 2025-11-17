@@ -1,21 +1,38 @@
-import React, { useState } from 'react';
-import { User, Mail, FileText, Edit2, Save, KeyRound } from 'lucide-react';
-
+import { useState } from 'react'
+import { User, Mail, FileText, Edit2, Save, KeyRound } from 'lucide-react'
+import { useAuthStore } from '../store/authStore'
+import toast from 'react-hot-toast'
 
 const ProfilePage = () => {
-  const [user, setUser] = useState(MOCK_USER);
-  const [isEditing, setIsEditing] = useState(false);
+  const { user, isUpdatingProfile, updateProfilePic } = useAuthStore()
+  const [isEditing, setIsEditing] = useState(false)
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setUser((prev) => ({ ...prev, [name]: value }));
-  };
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    try {
+      const formData = new FormData()
+      formData.append('profilepic', file)
+
+      const response = await updateProfilePic(formData)
+      if (response.success) {
+        console.log('Cập nhật ảnh đại diện thành công')
+        toast.success('Cập nhật ảnh đại diện thành công')
+      } else {
+        console.error('Cập nhật ảnh đại diện thất bại:', response.error)
+      }
+    } catch (error) {
+      console.log('Lỗi khi tải lên ảnh đại diện:', error)
+      toast.error('Lỗi khi tải lên ảnh đại diện')
+    }
+  }
 
   const handleSave = () => {
-    setIsEditing(false);
+    setIsEditing(false)
     // TODO: Gọi API để cập nhật thông tin user
-    console.log('Đã lưu thông tin:', user);
-  };
+    console.log('Đã lưu thông tin:', user)
+  }
 
   return (
     <div className="min-h-screen bg-base-200 p-4 md:p-8">
@@ -29,13 +46,28 @@ const ProfilePage = () => {
             <div className="flex flex-col items-center mb-6">
               <div className="avatar mb-4">
                 <div className="w-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
-                  <img src={user.avatar} alt="User Avatar" />
+                  <img
+                    src={
+                      user.profilepic
+                        ? `${import.meta.env.VITE_SERVER_URL}${user.profilepic}`
+                        : '/avatar.avif'
+                    }
+                    alt="User Avatar"
+                  />
                 </div>
               </div>
               {/* TODO: Thêm chức năng thay đổi avatar */}
-              <button className="btn btn-sm btn-outline btn-primary">
+              <label className="btn btn-sm btn-outline btn-primary">
                 <Edit2 size={14} /> Thay đổi Avatar
-              </button>
+                <input
+                  type="file"
+                  id="avater-upload"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={isUpdatingProfile}
+                />
+              </label>
             </div>
 
             {/* Form thông tin */}
@@ -48,8 +80,7 @@ const ProfilePage = () => {
                   name="name"
                   className="grow"
                   placeholder="Tên của bạn"
-                  value={user.name}
-                  onChange={handleChange}
+                  value={user?.fullname || ''}
                   disabled={!isEditing}
                 />
               </label>
@@ -62,7 +93,7 @@ const ProfilePage = () => {
                   name="email"
                   className="grow"
                   placeholder="Email"
-                  value={user.email}
+                  value={user?.email || ''}
                   disabled // Thường không cho đổi email
                 />
               </label>
@@ -72,8 +103,7 @@ const ProfilePage = () => {
                 name="bio"
                 className="textarea textarea-bordered w-full h-24"
                 placeholder="Giới thiệu về bạn..."
-                value={user.bio}
-                onChange={handleChange}
+                value={user?.bio || ''}
                 disabled={!isEditing}
               ></textarea>
             </div>
@@ -133,7 +163,7 @@ const ProfilePage = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ProfilePage;
+export default ProfilePage
