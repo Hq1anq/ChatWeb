@@ -1,14 +1,13 @@
-import React from 'react';
 // Sửa lỗi: Thêm phần mở rộng .jsx để đảm bảo module resolution
-import Messages from './chat/Messages.jsx';
-import MessageInput from './chat/MessageInput.jsx';
-import { Phone, Video, Info } from 'lucide-react';
+import Messages from './chat/Messages.jsx'
+import MessageInput from './chat/MessageInput.jsx'
+import { Phone, Video, Info } from 'lucide-react'
 
 const MessageContainer = () => {
   // Dữ liệu mẫu, sau này sẽ lấy từ state
   const selectedConversation = {
     name: 'Alice',
-  };
+  }
 
   if (!selectedConversation) {
     // Hiển thị khi chưa chọn cuộc trò chuyện
@@ -18,7 +17,7 @@ const MessageContainer = () => {
           Hãy chọn một cuộc trò chuyện để bắt đầu
         </p>
       </div>
-    );
+    )
   }
 
   return (
@@ -29,7 +28,10 @@ const MessageContainer = () => {
           {/* Avatar placeholder */}
           <div className="avatar online">
             <div className="w-12 rounded-full">
-              <img src={`https://placehold.co/600x600/E5E7EB/333333?text=A`} alt="User avatar" />
+              <img
+                src={`https://placehold.co/600x600/E5E7EB/333333?text=A`}
+                alt="User avatar"
+              />
             </div>
           </div>
           <span className="font-bold text-lg">{selectedConversation.name}</span>
@@ -61,8 +63,7 @@ const MessageContainer = () => {
         <MessageInput />
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default MessageContainer;
-
+export default MessageContainer

@@ -1,5 +1,4 @@
-import React from 'react';
-import { Search, LogOut } from 'lucide-react';
+import { Search } from 'lucide-react'
 
 // Component mẫu cho một cuộc trò chuyện
 const Conversation = ({ name, lastMessage, isSelected }) => (
@@ -10,24 +9,36 @@ const Conversation = ({ name, lastMessage, isSelected }) => (
     {/* Avatar placeholder */}
     <div className="avatar online">
       <div className="w-12 rounded-full">
-        <img src={`https://placehold.co/600x600/E5E7EB/333333?text=${name.charAt(0)}`} alt="User avatar" />
+        <img
+          src={`https://placehold.co/600x600/E5E7EB/333333?text=${name.charAt(
+            0
+          )}`}
+          alt="User avatar"
+        />
       </div>
     </div>
 
     {/* Thông tin */}
     <div className="grow">
-      <h3 className={`font-semibold ${isSelected ? 'text-white' : 'text-base-content'}`}>{name}</h3>
-      <p className={`text-sm ${isSelected ? 'text-white/80' : 'text-base-content/70'}`}>{lastMessage}</p>
+      <h3
+        className={`font-semibold ${
+          isSelected ? 'text-white' : 'text-base-content'
+        }`}
+      >
+        {name}
+      </h3>
+      <p
+        className={`text-sm ${
+          isSelected ? 'text-white/80' : 'text-base-content/70'
+        }`}
+      >
+        {lastMessage}
+      </p>
     </div>
   </div>
-);
+)
 
 const Sidebar = () => {
-  // TODO: Thêm logic đăng xuất
-  const handleLogout = () => {
-    console.log('Đăng xuất...');
-  };
-
   return (
     <div className="h-full flex flex-col bg-base-200 p-4">
       {/* Thanh tìm kiếm */}
@@ -65,7 +76,7 @@ const Sidebar = () => {
         />
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Sidebar;
+export default Sidebar

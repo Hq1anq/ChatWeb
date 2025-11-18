@@ -52,7 +52,7 @@ const Navbar = () => {
               <img
                 alt="User Avatar"
                 src={
-                  user.profilepic
+                  user?.profilepic
                     ? `${import.meta.env.VITE_SERVER_URL}${user.profilepic}`
                     : '/avatar.avif'
                 }
