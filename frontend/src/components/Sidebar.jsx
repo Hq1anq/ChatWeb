@@ -1,18 +1,21 @@
+import axiosInstance from '../lib/axios'
+import { useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
-import { useEffect, useState } from 'react'
-import axiosInstance from '../lib/axios'
+import { useChatStore } from '../store/chatStore'
 
 // Component một cuộc trò chuyện
 const Conversation = ({ user, isSelected, onlineUsers, onClick }) => {
   // Kiểm tra user có online không
   const isOnline = onlineUsers.includes(user.userid.toString())
-  
+
   return (
     <div
       onClick={onClick}
       className={`flex gap-3 items-center p-3 rounded-lg cursor-pointer transition-colors
-        ${isSelected ? 'bg-primary text-primary-content' : 'hover:bg-base-300'}`}
+        ${
+          isSelected ? 'bg-primary text-primary-content' : 'hover:bg-base-300'
+        }`}
     >
       {/* Avatar với status online/offline */}
       <div className={`avatar ${isOnline ? 'online' : 'offline'}`}>
@@ -21,7 +24,9 @@ const Conversation = ({ user, isSelected, onlineUsers, onClick }) => {
             src={
               user.profilepic
                 ? `${import.meta.env.VITE_SERVER_URL}${user.profilepic}`
-                : `https://placehold.co/600x600/E5E7EB/333333?text=${user.fullname.charAt(0)}`
+                : `https://placehold.co/600x600/E5E7EB/333333?text=${user.fullname.charAt(
+                    0
+                  )}`
             }
             alt={`${user.fullname} avatar`}
           />
@@ -49,8 +54,9 @@ const Conversation = ({ user, isSelected, onlineUsers, onClick }) => {
   )
 }
 
-const Sidebar = ({ onSelectUser, selectedUserId }) => {
+const Sidebar = () => {
   const { onlineUsers } = useAuthStore()
+  const { selectedUser, setSelectedUser } = useChatStore()
   const [users, setUsers] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -116,9 +122,9 @@ const Sidebar = ({ onSelectUser, selectedUserId }) => {
             <Conversation
               key={user.userid}
               user={user}
-              isSelected={selectedUserId === user.userid}
+              isSelected={selectedUser?.userid === user.userid}
               onlineUsers={onlineUsers}
-              onClick={() => onSelectUser(user)}
+              onClick={() => setSelectedUser(user)}
             />
           ))
         )}
