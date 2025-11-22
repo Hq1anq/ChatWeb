@@ -35,7 +35,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-base-200 p-4 md:p-8">
+    <div className="bg-base-200 p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
         {/* Card thông tin cá nhân */}
         <div className="card w-full bg-base-100 shadow-xl">

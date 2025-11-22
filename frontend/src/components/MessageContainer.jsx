@@ -18,7 +18,7 @@ const MessageContainer = () => {
   if (!selectedUser) {
     // Hiển thị khi chưa chọn cuộc trò chuyện
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex-1 flex items-center justify-center h-full">
         <div className="text-center">
           <div className="text-6xl mb-4">💬</div>
           <p className="text-xl text-base-content/60">
@@ -32,7 +32,7 @@ const MessageContainer = () => {
   const isOnline = onlineUsers.includes(selectedUser.userid.toString())
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex-1 flex flex-col h-full">
       {/* Header của khung chat */}
       <div className="flex items-center justify-between p-4 shadow-sm bg-base-100">
         <div className="flex items-center gap-3">
@@ -42,8 +42,12 @@ const MessageContainer = () => {
               <img
                 src={
                   selectedUser.profilepic
-                    ? `${import.meta.env.VITE_SERVER_URL}${selectedUser.profilepic}`
-                    : `https://placehold.co/600x600/E5E7EB/333333?text=${selectedUser.fullname.charAt(0)}`
+                    ? `${import.meta.env.VITE_SERVER_URL}${
+                        selectedUser.profilepic
+                      }`
+                    : `https://placehold.co/600x600/E5E7EB/333333?text=${
+                        selectedUser.fullname.charAt(0)
+                      }`
                 }
                 alt={`${selectedUser.fullname} avatar`}
               />

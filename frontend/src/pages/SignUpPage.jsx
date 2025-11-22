@@ -56,7 +56,7 @@ const SignUpPage = () => {
   const displayError = validationError || error
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-base-200">
+    <div className="flex items-center justify-center h-full bg-base-200">
       <div className="card w-full max-w-md shadow-xl bg-base-100">
         <div className="card-body">
           <h2 className="card-title justify-center text-2xl font-bold">
