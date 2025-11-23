@@ -1,41 +1,62 @@
-// Sửa lỗi: Thêm phần mở rộng .jsx để đảm bảo module resolution
+import { useEffect, useRef } from 'react'
 import Messages from './chat/Messages.jsx'
 import MessageInput from './chat/MessageInput.jsx'
 import { Phone, Video, Info } from 'lucide-react'
+import { useChatStore } from '../store/chatStore'
+import { useAuthStore } from '../store/authStore'
 
 const MessageContainer = () => {
-  // Dữ liệu mẫu, sau này sẽ lấy từ state
-  const selectedConversation = {
-    name: 'Alice',
-  }
+  const { selectedUser, messages, isLoadingMessages } = useChatStore()
+  const { onlineUsers } = useAuthStore()
+  const messagesEndRef = useRef(null)
 
-  if (!selectedConversation) {
+  // Auto scroll to bottom khi có tin nhắn mới
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  if (!selectedUser) {
     // Hiển thị khi chưa chọn cuộc trò chuyện
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-xl text-base-content/60">
-          Hãy chọn một cuộc trò chuyện để bắt đầu
-        </p>
+        <div className="text-center">
+          <div className="text-6xl mb-4">💬</div>
+          <p className="text-xl text-base-content/60">
+            Hãy chọn một cuộc trò chuyện để bắt đầu
+          </p>
+        </div>
       </div>
     )
   }
+
+  const isOnline = onlineUsers.includes(selectedUser.userid.toString())
 
   return (
     <div className="flex flex-col h-full">
       {/* Header của khung chat */}
       <div className="flex items-center justify-between p-4 shadow-sm bg-base-100">
         <div className="flex items-center gap-3">
-          {/* Avatar placeholder */}
-          <div className="avatar online">
+          {/* Avatar với online status */}
+          <div className={`avatar ${isOnline ? 'online' : 'offline'}`}>
             <div className="w-12 rounded-full">
               <img
-                src={`https://placehold.co/600x600/E5E7EB/333333?text=A`}
-                alt="User avatar"
+                src={
+                  selectedUser.profilepic
+                    ? `${import.meta.env.VITE_SERVER_URL}${selectedUser.profilepic}`
+                    : `https://placehold.co/600x600/E5E7EB/333333?text=${selectedUser.fullname.charAt(0)}`
+                }
+                alt={`${selectedUser.fullname} avatar`}
               />
             </div>
           </div>
-          <span className="font-bold text-lg">{selectedConversation.name}</span>
+          <div>
+            <span className="font-bold text-lg">{selectedUser.fullname}</span>
+            <p className="text-xs text-base-content/60">
+              {isOnline ? 'Đang hoạt động' : 'Không hoạt động'}
+            </p>
+          </div>
         </div>
+
         {/* Các nút hành động */}
         <div className="flex gap-2">
           <button className="btn btn-ghost btn-circle">
@@ -55,7 +76,22 @@ const MessageContainer = () => {
 
       {/* Khu vực hiển thị tin nhắn */}
       <div className="grow overflow-y-auto p-4 bg-base-200">
-        <Messages />
+        {isLoadingMessages ? (
+          <div className="flex justify-center items-center h-full">
+            <span className="loading loading-spinner loading-lg"></span>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex justify-center items-center h-full">
+            <p className="text-base-content/60">
+              Chưa có tin nhắn. Hãy bắt đầu cuộc trò chuyện!
+            </p>
+          </div>
+        ) : (
+          <>
+            <Messages messages={messages} />
+            <div ref={messagesEndRef} />
+          </>
+        )}
       </div>
 
       {/* Khu vực nhập tin nhắn */}

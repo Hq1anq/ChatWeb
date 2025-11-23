@@ -1,30 +1,32 @@
-import React from 'react';
-// Sửa lỗi: Thêm phần mở rộng .jsx để đảm bảo module resolution
-import Message from './Message.jsx';
+import React from 'react'
+import Message from './Message.jsx'
+import { useAuthStore } from '../../store/authStore'
 
-const Messages = () => {
-  // Dữ liệu mẫu
-  const messageData = [
-    { id: 1, text: 'Chào bạn!', fromMe: false, time: '10:00 AM' },
-    { id: 2, text: 'Chào, bạn khoẻ không?', fromMe: true, time: '10:01 AM' },
-    { id: 3, text: 'Mình khoẻ, cảm ơn bạn. Còn bạn?', fromMe: false, time: '10:01 AM' },
-    { id: 4, text: 'Mình cũng vậy. Đang làm gì đó?', fromMe: true, time: '10:02 AM' },
-  ];
+const Messages = ({ messages }) => {
+  const { user } = useAuthStore()
+
+  // Format thời gian
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp)
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    return `${hours}:${minutes}`
+  }
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Dùng vòng lặp để render các tin nhắn */}
-      {messageData.map((msg) => (
+      {messages.map((msg) => (
         <Message
-          key={msg.id}
-          text={msg.text}
-          fromMe={msg.fromMe}
-          time={msg.time}
+          key={msg.messageid}
+          text={msg.content}
+          image={msg.image}
+          fromMe={msg.senderid === user.userid || msg.senderid === 'me'}
+          time={formatTime(msg.created)}
+          isTemp={msg.isTemp} // Để hiển thị loading indicator
         />
       ))}
     </div>
-  );
-};
+  )
+}
 
-export default Messages;
-
+export default Messages
