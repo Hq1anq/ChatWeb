@@ -14,7 +14,7 @@ CREATE TABLE dbo.Messages (
   messageid INT IDENTITY(1,1) PRIMARY KEY,
   senderid INT NOT NULL,
   receiverid INT NOT NULL,
-  content NVARCHAR(500) NOT NULL,
+  content NVARCHAR(500),
   image NVARCHAR(100) NULL DEFAULT (''),  -- Optional image URL
   created DATETIME DEFAULT GETDATE(),
   FOREIGN KEY (senderid) REFERENCES dbo.Users(userid),

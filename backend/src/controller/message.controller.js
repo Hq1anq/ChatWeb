@@ -1,11 +1,10 @@
 import Message from '../model/message.model.js'
 import { User } from '../model/user.model.js'
 
-export const getUsersForSidebar = (req, res) => {
+export const getUsersForSidebar = async (req, res) => {
   try {
     const loggedInUserId = req.user.userid
-    const filteredUsers = User.getExcept(loggedInUserId)
-
+    const filteredUsers = await User.getExcept(loggedInUserId)
     res.status(200).json(filteredUsers)
   } catch (error) {
     console.error('Error in getUsersForSidebar controller:', error.message)
