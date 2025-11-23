@@ -6,9 +6,23 @@ import { useChatStore } from '../store/chatStore'
 import { useAuthStore } from '../store/authStore'
 
 const MessageContainer = () => {
-  const { selectedUser, messages, isLoadingMessages } = useChatStore()
+  const {
+    selectedUser,
+    getMessages,
+    messages,
+    isLoadingMessages,
+    onMessage,
+    offMessage,
+  } = useChatStore()
   const { onlineUsers } = useAuthStore()
   const messagesEndRef = useRef(null)
+
+  useEffect(() => {
+    if (!selectedUser?.userid) return
+    getMessages(selectedUser.userid)
+    onMessage()
+    return () => offMessage()
+  }, [selectedUser?.userid])
 
   // Auto scroll to bottom khi có tin nhắn mới
   useEffect(() => {
@@ -45,9 +59,9 @@ const MessageContainer = () => {
                     ? `${import.meta.env.VITE_SERVER_URL}${
                         selectedUser.profilepic
                       }`
-                    : `https://placehold.co/600x600/E5E7EB/333333?text=${
-                        selectedUser.fullname.charAt(0)
-                      }`
+                    : `https://placehold.co/600x600/E5E7EB/333333?text=${selectedUser.fullname.charAt(
+                        0
+                      )}`
                 }
                 alt={`${selectedUser.fullname} avatar`}
               />

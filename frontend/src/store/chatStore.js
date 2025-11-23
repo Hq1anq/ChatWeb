@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import axiosInstance from '../lib/axios'
 import toast from 'react-hot-toast'
+import { useAuthStore } from './authStore'
 
 export const useChatStore = create((set, get) => ({
   messages: [],
@@ -81,17 +82,22 @@ export const useChatStore = create((set, get) => ({
   },
 
   // Thêm tin nhắn mới từ socket (realtime)
-  addMessage: (message) => {
-    const { selectedUser, messages } = get()
-    
-    // Chỉ thêm nếu tin nhắn liên quan đến cuộc trò chuyện hiện tại
-    if (
-      selectedUser &&
-      (message.senderid === selectedUser.userid ||
-        message.receiverid === selectedUser.userid)
-    ) {
-      set({ messages: [...messages, message] })
-    }
+  onMessage: () => {
+    const { selectedUser } = get()
+
+    if (!selectedUser) return
+
+    const socket = useAuthStore.getState().socket
+
+    socket.on('newMessage', (newMessage) => {
+      if (newMessage.senderid === selectedUser.userid)
+        set({ messages: [...get().messages, newMessage] })
+    })
+  },
+
+  offMessage: () => {
+    const socket = useAuthStore.getState().socket
+    socket.off('newMessage')
   },
 
   // Clear messages khi đóng chat
