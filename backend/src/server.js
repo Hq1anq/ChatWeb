@@ -1,17 +1,13 @@
 import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
-import dotenv from 'dotenv' // 1. Import dotenv
-import path from 'path'     // 2. Import path
+import path from 'path' // 2. Import path
 
 // Import từ file socket của bạn
 import { app, server } from './lib/socket.js'
 
 import authRoutes from './route/auth.route.js'
 import messageRoutes from './route/message.route.js'
-
-// Kích hoạt dotenv để đọc file .env
-dotenv.config()
 
 const __dirname = path.resolve() // 4. Lấy đường dẫn gốc của dự án
 
@@ -22,7 +18,10 @@ app.use(cookieParser())
 // Cấu hình Static Files (Sửa lại cho chắc chắn)
 // Khi Frontend gọi: http://localhost:5000/profilepics/abc.jpg
 // Server sẽ tìm trong: /YourProject/public/profilepics/abc.jpg
-app.use('/profilepics', express.static(path.join(__dirname, 'public/profilepics')))
+app.use(
+  '/profilepics',
+  express.static(path.join(__dirname, 'public/profilepics'))
+)
 
 app.use(
   cors({
