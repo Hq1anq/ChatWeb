@@ -19,7 +19,7 @@ export const User = {
 
   async getAll() {
     const pool = await getConnection()
-    const result = await pool.request().query('SELECT * FROM Users')
+    const result = await pool.request().query('SSELECT userid, email, fullname, profilepic FROM Users')
     return result.recordset
   },
 
@@ -49,8 +49,8 @@ export const User = {
       .input('profilepic', sql.NVarChar(100), profilepic).query(`
         UPDATE Users
         SET profilepic = @profilepic
+        OUTPUT INSERTED.* -- Trả về dữ liệu mới ngay lập tức
         WHERE userid = @userid;
-        SELECT * FROM Users WHERE userid = @userid;
       `)
     return result.recordset[0]
   },

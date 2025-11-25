@@ -33,7 +33,7 @@ router.put(
 router.get('/users', async (req, res) => {
   try {
     const pool = await getConnection()
-    const result = await pool.request().query('SELECT * FROM Users')
+    const result = await pool.request().query('SELECT userid, fullname, email, profilepic FROM Users')
     res.json(result.recordset)
   } catch (err) {
     console.error('❌ Error fetching users:', err)

@@ -36,7 +36,7 @@ export async function signup(req, res) {
         email: newUser.email,
         profilepic: newUser.profilepic,
       })
-    } else res.status(400).json({ messave: 'Invalid user data' })
+    } else res.status(400).json({ message: 'Invalid user data' })
   } catch (error) {
     console.error('Error in signup controller: ', error.message)
     res.status(500).json({ message: 'Internal Server Error' })
