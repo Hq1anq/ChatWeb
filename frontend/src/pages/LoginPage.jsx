@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { User, Lock, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
@@ -34,7 +34,7 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-base-200">
+    <div className="flex items-center justify-center h-full bg-base-200">
       <div className="card w-full max-w-md shadow-xl bg-base-100 p-8">
         <div className="card-body p-0">
           <h2 className="card-title justify-center text-3xl font-bold mb-6">
