@@ -22,7 +22,16 @@ export default async function protectedRoute(req, res, next) {
 
     next()
   } catch (error) {
-    console.log('Error in protectedRoute middleware:', error.message)
-    res.status(500).json({ message: 'Internal Server Error' })
+  console.log('Error in protectedRoute middleware:', error.message)
+  
+  // Phân biệt lỗi do token hết hạn/sai với lỗi server
+  if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Unauthorized: Token expired' });
   }
+  if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Unauthorized: Invalid token' });
+  }
+
+  res.status(500).json({ message: 'Internal Server Error' })
+}
 }
