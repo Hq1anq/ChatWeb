@@ -1,5 +1,6 @@
 CREATE DATABASE WEB;
 
+DROP TABLE IF EXISTS dbo.Users;
 CREATE TABLE dbo.Users (
   userid INT IDENTITY(1,1) PRIMARY KEY,   -- Auto-increment unique ID
   email NVARCHAR(50) NOT NULL UNIQUE,     -- email must be unique and required
@@ -10,12 +11,13 @@ CREATE TABLE dbo.Users (
   updated DATETIME DEFAULT GETDATE()
 );
 
+DROP TABLE IF EXISTS dbo.Messages;
 CREATE TABLE dbo.Messages (
   messageid INT IDENTITY(1,1) PRIMARY KEY,
   senderid INT NOT NULL,
   receiverid INT NOT NULL,
   content NVARCHAR(500),
-  image NVARCHAR(100) NULL DEFAULT (''),  -- Optional image URL
+  [file] NVARCHAR(100) NULL DEFAULT (''),  -- Optional
   created DATETIME DEFAULT GETDATE(),
   FOREIGN KEY (senderid) REFERENCES dbo.Users(userid),
   FOREIGN KEY (receiverid) REFERENCES dbo.Users(userid)

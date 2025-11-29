@@ -63,26 +63,39 @@ export const User = {
             ISNULL(bio, '') as bio -- <--- Quan trọng: Biến NULL thành ''
         FROM Users 
         WHERE userid = @userid;
+        SELECT userid, fullname, profilepic FROM Users WHERE userid = @userid;
       `)
     return result.recordset[0]
   },
 
-  async getExcept(excludeUserId) {
+  async getSidebarList(userid) {
+    const pool = await getConnection()
+    const result = await pool.request().input('userid', sql.Int, userid).query(`
+        SELECT
+          u.userid,
+          u.fullname,
+          u.profilepic,
+          mLatest.content as latestMessage,
+          mLatest.created as latestTime
+        FROM Users u
+        OUTER APPLY (
+          SELECT TOP 1 Content, created
+          FROM Messages
+          Where (senderid = @userid AND receiverid = u.userid)
+             OR (receiverid = @userid AND senderid = u.userid)
+          ORDER BY created DESC
+        ) mLatest
+        WHERE userid <> @userid
+        ORDER BY mLatest.created DESC`)
+    return result.recordset
+  },
+  async updateBio(userid, bio) {
+    // Nhận vào object chứa bio
     const pool = await getConnection()
     const result = await pool
       .request()
-      .input('excludeUserId', sql.Int, excludeUserId).query(`
-        SELECT userid, email, fullname, profilepic, bio
-        FROM Users WHERE userid != @excludeUserId`)
-    return result.recordset
-  },
-  async updateBio(userid, bio ) { // Nhận vào object chứa bio
-  const pool = await getConnection()
-  const result = await pool
-    .request()
-    .input('userid', sql.Int, userid)
-    .input('bio', sql.NVarChar(500), bio)
-    .query(`
+      .input('userid', sql.Int, userid)
+      .input('bio', sql.NVarChar(500), bio).query(`
       -- Bước 1: Update dữ liệu
         UPDATE Users
         SET bio = @bio
@@ -93,11 +106,12 @@ export const User = {
         FROM Users
         WHERE userid = @userid;
     `)
-  return result.recordset[0]
-},
+    return result.recordset[0]
+  },
   async updatePassword(userid, newPassword) {
     const pool = await getConnection()
-    await pool.request()
+    await pool
+      .request()
       .input('userid', sql.Int, userid)
       .input('password', sql.NVarChar(255), newPassword) // Password đã hash
       .query(`

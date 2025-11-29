@@ -11,7 +11,7 @@ import {
   updatePassword,
 } from '../controller/auth.controller.js'
 import protectedRoute from '../middleware/auth.middleware.js'
-import upload from '../middleware/upload.middleware.js'
+import uploadProfilePic from '../middleware/uploadProfilePic.middleware.js'
 
 const router = express.Router()
 
@@ -28,14 +28,16 @@ router.get('/me', protectedRoute, checkAuth)
 router.put(
   '/update-profile/pic',
   protectedRoute,
-  upload.single('profilepic'),
+  uploadProfilePic.single('profilepic'),
   updateProfilePic
 )
 
 router.get('/users', async (req, res) => {
   try {
     const pool = await getConnection()
-    const result = await pool.request().query('SELECT userid, fullname, email, profilepic FROM Users')
+    const result = await pool
+      .request()
+      .query('SELECT userid, fullname, email, profilepic FROM Users')
     res.json(result.recordset)
   } catch (err) {
     console.error('❌ Error fetching users:', err)
