@@ -46,10 +46,20 @@ export const User = {
     const result = await pool
       .request()
       .input('userid', sql.Int, userid)
-      .input('profilepic', sql.NVarChar(100), profilepic).query(`
+      .input('profilepic', sql.NVarChar(sql.MAX), profilepic).query(`
+        -- 1. Update Ảnh
         UPDATE Users
         SET profilepic = @profilepic
-        OUTPUT INSERTED.* -- Trả về dữ liệu mới ngay lập tức
+        WHERE userid = @userid;
+
+        -- 2. Select lại TOÀN BỘ thông tin (Dùng ISNULL cho Bio)
+        SELECT 
+            userid, 
+            email, 
+            fullname, 
+            profilepic, 
+            ISNULL(bio, '') as bio -- <--- Quan trọng: Biến NULL thành ''
+        FROM Users 
         WHERE userid = @userid;
       `)
     return result.recordset[0]
@@ -60,8 +70,39 @@ export const User = {
     const result = await pool
       .request()
       .input('excludeUserId', sql.Int, excludeUserId).query(`
-        SELECT userid, email, fullname, profilepic
+        SELECT userid, email, fullname, profilepic, bio
         FROM Users WHERE userid != @excludeUserId`)
     return result.recordset
+  },
+  async updateBio(userid, bio ) { // Nhận vào object chứa bio
+  const pool = await getConnection()
+  const result = await pool
+    .request()
+    .input('userid', sql.Int, userid)
+    .input('bio', sql.NVarChar(500), bio)
+    .query(`
+      -- Bước 1: Update dữ liệu
+        UPDATE Users
+        SET bio = @bio
+        WHERE userid = @userid;
+
+        -- Bước 2: Select lại dữ liệu vừa update để trả về cho Frontend
+        SELECT userid, email, fullname, profilepic, bio
+        FROM Users
+        WHERE userid = @userid;
+    `)
+  return result.recordset[0]
+},
+  async updatePassword(userid, newPassword) {
+    const pool = await getConnection()
+    await pool.request()
+      .input('userid', sql.Int, userid)
+      .input('password', sql.NVarChar(255), newPassword) // Password đã hash
+      .query(`
+        UPDATE Users
+        SET password = @password
+        WHERE userid = @userid
+      `)
+    return true
   },
 }

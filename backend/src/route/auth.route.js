@@ -7,6 +7,8 @@ import {
   logout,
   checkAuth,
   updateProfilePic,
+  updateProfileBio,
+  updatePassword,
 } from '../controller/auth.controller.js'
 import protectedRoute from '../middleware/auth.middleware.js'
 import upload from '../middleware/upload.middleware.js'
@@ -40,5 +42,6 @@ router.get('/users', async (req, res) => {
     res.status(500).send('Server error')
   }
 })
-
+router.put('/update-profile/bio', protectedRoute, updateProfileBio);
+router.put('/update-password', protectedRoute, updatePassword)
 export default router
