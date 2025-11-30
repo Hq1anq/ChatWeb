@@ -46,7 +46,9 @@ export const useChatStore = create((set, get) => ({
   },
 
   // Gửi tin nhắn với Optimistic UI
-  sendMessage: async (content, image = null) => {
+  sendMessage: async (message, fileAttachment) => {
+    console.log('message: ', message)
+    console.log('file: ', fileAttachment)
     const { selectedUser, messages } = get()
     if (!selectedUser) return
 
@@ -55,8 +57,8 @@ export const useChatStore = create((set, get) => ({
       messageid: `temp-${Date.now()}`,
       senderid: 'me', // Sẽ được thay thế bằng userid thật
       receiverid: selectedUser.userid,
-      content,
-      image,
+      content: message,
+      image: fileAttachment ? fileAttachment.file.name : null,
       created: new Date().toISOString(),
       isTemp: true, // Đánh dấu là tin nhắn tạm
     }
@@ -65,9 +67,25 @@ export const useChatStore = create((set, get) => ({
     set({ messages: [...messages, tempMessage], isSendingMessage: true })
 
     try {
+      const formData = new FormData()
+
+      if (message.trim()) {
+        formData.append('content', message)
+      }
+
+      if (fileAttachment) {
+        // Multer ở backend expects file với keyvalue 'image'
+        formData.append('file', fileAttachment.file)
+      }
+
       const response = await axiosInstance.post(
         `/message/send/${selectedUser.userid}`,
-        { content, image }
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
       )
 
       // Thay thế tin nhắn tạm bằng tin nhắn thật từ server

@@ -9,12 +9,6 @@ const Navbar = () => {
   // Giả sử bạn lấy user và hàm logout từ store
   const { user, logout } = useAuthStore()
 
-  // Dùng dữ liệu mẫu
-  // const user = {
-  //   name: 'Username',
-  //   avatar: 'https://placehold.co/100x100/A0A0A0/333333?text=U',
-  // }
-
   const handleLogout = () => {
     console.log('Đăng xuất...')
     logout()
@@ -22,17 +16,15 @@ const Navbar = () => {
   }
 
   return (
-    <div className="navbar bg-base-100 shadow-sm sticky top-0 z-50">
+    <div className="navbar justify-between px-4 bg-base-300 shadow-lg sticky top-0 z-50 border-b-2 border-[color-mix(in oklab, var(--color-base-content) 10%, transparent)]">
       {/*Tên ứng dụng */}
-      <div className="flex-1">
-        <Link to="/" className="btn btn-ghost text-2xl font-bold text-primary">
-          <MessageSquareText size={28} className="mr-2" />
-          ChatApp
-        </Link>
-      </div>
+      <Link to="/" className="btn btn-ghost text-2xl font-bold text-primary">
+        <MessageSquareText size={28} className="mr-2" />
+        ChatApp
+      </Link>
 
       {/*Icon và User Dropdown */}
-      <div className="flex-none gap-2">
+      <div className="flex gap-2">
         {/* Theme Toggle Component */}
         <ThemeToggle />
         {/* Icon thông báo */}

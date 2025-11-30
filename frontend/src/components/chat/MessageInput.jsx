@@ -1,23 +1,35 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { Send, Paperclip, X, Loader2 } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Send, Paperclip, X, Loader2, FileText } from 'lucide-react'
 import { useChatStore } from '../../store/chatStore'
 import toast from 'react-hot-toast'
 
+// Hằng số cho dung lượng file tối đa (5MB như config bên backend)
+const MAX_FILE_SIZE = 5 * 1024 * 1024
+
 const MessageInput = () => {
   const [message, setMessage] = useState('')
-  const [imagePreview, setImagePreview] = useState(null)
+  const [fileAttachment, setFileAttachment] = useState(null)
   const fileInputRef = useRef(null)
-  
+
   // 1. Thêm Ref cho textarea để điều khiển chiều cao
   const textareaRef = useRef(null)
-  
+
   const { sendMessage, isSendingMessage, selectedUser } = useChatStore()
+
+  // Function to render the appropriate icon based on file type
+  const getFileIcon = (file) => {
+    if (file.type.startsWith('image/')) {
+      return <Image size={24} className="text-success" />
+    }
+    // You can add more specific checks here (e.g., for PDF, ZIP)
+    return <FileText size={24} className="text-info" />
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
-    if (message.trim() === '' && !imagePreview) {
-      toast.error('Vui lòng nhập tin nhắn hoặc chọn ảnh')
+
+    if (message.trim() === '' && !fileAttachment) {
+      toast.error('Vui lòng nhập tin nhắn hoặc chọn file')
       return
     }
 
@@ -27,76 +39,104 @@ const MessageInput = () => {
     }
 
     // Gửi tin nhắn (với Optimistic UI)
-    const result = await sendMessage(message, imagePreview)
+    const result = await sendMessage(message, fileAttachment)
 
     if (result.success) {
       // Clear input sau khi gửi thành công
       setMessage('')
-      setImagePreview(null)
+      setFileAttachment(null)
       // 2. Reset chiều cao textarea về ban đầu sau khi gửi
       if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
+        textareaRef.current.style.height = 'auto'
       }
     }
   }
 
-  const handleImageSelect = (e) => {
+  const handleFileSelect = (e) => {
     const file = e.target.files[0]
     if (!file) return
 
-    if (!file.type.startsWith('image/')) {
-      toast.error('Vui lòng chọn file ảnh')
-      return
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
       toast.error('Kích thước ảnh không được vượt quá 5MB')
       return
     }
 
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setImagePreview(reader.result)
+    if (file.type.startsWith('image/')) {
+      // nếu là ảnh, tạo URL preview.
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        // Store both the File object and its preview URL
+        setFileAttachment({ file, previewUrl: reader.result })
+      }
+      reader.readAsDataURL(file)
+    } else {
+      // For non-image files, store the File object and use null for the preview URL
+      setFileAttachment({ file, previewUrl: null })
     }
-    reader.readAsDataURL(file)
+
+    toast.success(`File selected: ${file.name}`)
+
+    // Create preview
+    // reader.onloadend = () => {
+    //   setImagePreview(reader.result)
+    // }
   }
 
-  const removeImage = () => {
-    setImagePreview(null)
+  const removeFile = () => {
+    setFileAttachment(null)
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+      fileInputRef.current.value = '' // Clear the actual file input value
     }
   }
 
   // 3. Hàm xử lý tự động co giãn chiều cao
   const handleInput = (e) => {
-    setMessage(e.target.value);
-    const target = e.target;
-    target.style.height = "auto"; 
-    target.style.height = `${target.scrollHeight}px`; 
-  };
+    setMessage(e.target.value)
+    const target = e.target
+    target.style.height = 'auto'
+    target.style.height = `${target.scrollHeight}px`
+  }
 
   // 4. Hàm xử lý phím bấm (Enter vs Shift+Enter)
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault(); // Chặn xuống dòng mặc định
-      handleSubmit(e);    // Gửi form
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault() // Chặn xuống dòng mặc định
+      handleSubmit(e) // Gửi form
     }
   }
 
   return (
-    <div className="relative p-4 w-full">
-      {/* Image Preview - Giữ nguyên */}
-      {imagePreview && (
-        <div className="mb-3 relative inline-block">
-          <img
+    <div className="relative">
+      {/* Image Preview */}
+      {fileAttachment && (
+        <div className="mb-3 relative bg-base-200 p-3 rounded-lg border border-base-300 max-w-sm">
+          <div className="flex items-center gap-3">
+            {fileAttachment.previewUrl ? (
+              // Image preview
+              <img
+                src={fileAttachment.previewUrl}
+                alt="Preview"
+                className="w-16 h-16 object-cover rounded-md border"
+              />
+            ) : (
+              // Non-image file icon and name
+              <div className="flex flex-col items-center justify-center w-16 h-16 bg-base-300 rounded-md">
+                {getFileIcon(fileAttachment.file)}
+              </div>
+            )}
+            <span className="truncate max-w-[200px]">
+              {fileAttachment.file.name}
+            </span>
+          </div>
+          {/* <img
             src={imagePreview}
             alt="Preview"
             className="max-h-32 rounded-lg border-2 border-primary"
-          />
+          /> */}
           <button
             type="button"
-            onClick={removeImage}
+            onClick={removeFile}
             className="absolute -top-2 -right-2 btn btn-circle btn-xs btn-error"
           >
             <X size={14} />
@@ -105,14 +145,15 @@ const MessageInput = () => {
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="flex items-end gap-2"> {/* items-end để icon nằm dưới cùng */}
+      <form onSubmit={handleSubmit} className="flex items-end gap-2">
+        {/* items-end để icon nằm dưới cùng */}
         {/* Nút đính kèm file */}
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
           className="hidden"
-          onChange={handleImageSelect}
+          onChange={handleFileSelect}
           disabled={isSendingMessage}
         />
         <button
@@ -123,24 +164,22 @@ const MessageInput = () => {
         >
           <Paperclip size={20} />
         </button>
-
         {/* 5. Thay Input bằng Textarea */}
         <textarea
           ref={textareaRef}
           placeholder={isSendingMessage ? 'Đang gửi...' : 'Nhập tin nhắn...'}
-          className="textarea textarea-bordered w-full resize-none min-h-[48px] max-h-[150px] leading-normal py-3"
+          className="textarea textarea-bordered w-full resize-none min-h-12 max-h-[150px] leading-normal py-3"
           value={message}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
           disabled={isSendingMessage}
           rows={1}
         />
-
         {/* Nút gửi */}
         <button
           type="submit"
           className="btn btn-primary btn-circle mb-1" // mb-1 để căn đều đáy với textarea
-          disabled={isSendingMessage || (!message.trim() && !imagePreview)}
+          disabled={isSendingMessage || (!message.trim() && !fileAttachment)}
         >
           {isSendingMessage ? (
             <Loader2 size={20} className="animate-spin" />

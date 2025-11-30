@@ -16,10 +16,6 @@ export function formatTimeAgo(isoUTCString) {
   const timestamp = new Date(safeString) // parsed from server (UTC ISO string)
 
   const diffMs = now.getTime() - timestamp.getTime() // ms difference
-  if (diffMs < 0) {
-    console.log(now)
-    console.log(timestamp)
-  }
   if (diffMs < 0) return '0m' // Future-safe fallback
 
   const diffMinutes = Math.floor(diffMs / 60000)
@@ -29,7 +25,6 @@ export function formatTimeAgo(isoUTCString) {
   const diffMonths = Math.floor(diffDays / 30)
 
   // Minutes
-  if (diffMinutes < 60) console.log(diffMinutes)
   if (diffMinutes < 60) return `${diffMinutes || 1}m` // show 1m minimum
 
   // Hours

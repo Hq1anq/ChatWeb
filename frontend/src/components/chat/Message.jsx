@@ -10,15 +10,17 @@ const Message = ({ fromMe, text, image, time, isTemp }) => {
   // Lấy thông tin user để hiển thị avatar chính xác
   const { user } = useAuthStore()
   const { selectedUser } = useChatStore()
-  const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
+  const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000'
 
   // Xác định avatar cần hiển thị (Của mình hay của bạn chat)
-  const targetUser = fromMe ? user : selectedUser;
-  
+  const targetUser = fromMe ? user : selectedUser
+
   // Logic hiển thị Avatar: Có ảnh -> Link Server, Không có -> Ảnh mặc định
-  const profilePic = targetUser?.profilepic 
-    ? `${serverUrl}${targetUser.profilepic}` 
-    : "/avatar.png"; 
+  const profilePic = targetUser?.profilepic
+    ? `${serverUrl}${targetUser.profilepic}`
+    : `https://placehold.co/600x600/E5E7EB/333333?text=${targetUser.fullname.charAt(
+        0
+      )}`
 
   return (
     <div className={`chat ${alignment}`}>
@@ -26,10 +28,7 @@ const Message = ({ fromMe, text, image, time, isTemp }) => {
       {!fromMe && (
         <div className="chat-image avatar">
           <div className="w-10 rounded-full border">
-            <img
-              alt="User avatar"
-              src={profilePic}
-            />
+            <img alt="User avatar" src={profilePic} />
           </div>
         </div>
       )}
@@ -46,12 +45,12 @@ const Message = ({ fromMe, text, image, time, isTemp }) => {
             />
           </div>
         )}
-        
+
         {/* Hiển thị text - SỬA ĐỔI QUAN TRỌNG: whitespace-pre-wrap */}
         {text && (
-            <p className="whitespace-pre-wrap break-words text-left min-w-0">
-                {text}
-            </p>
+          <p className="whitespace-pre-wrap wrap-break-words text-left min-w-0">
+            {text}
+          </p>
         )}
 
         {/* Loading indicator */}
@@ -64,9 +63,7 @@ const Message = ({ fromMe, text, image, time, isTemp }) => {
       </div>
 
       {/* Thời gian */}
-      <div className="chat-footer opacity-50 text-xs mt-1">
-        {time}
-      </div>
+      <div className="chat-footer opacity-50 text-xs mt-1">{time}</div>
     </div>
   )
 }
