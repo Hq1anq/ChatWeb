@@ -75,16 +75,10 @@ const ProfilePage = () => {
   }
 
   return (
-<<<<<<< HEAD
     <div className="min-h-screen bg-base-200 p-4 md:p-8">
       <div className="max-w-3xl mx-auto space-y-8">
         
         {/* CARD 1: THÔNG TIN CÁ NHÂN */}
-=======
-    <div className="bg-base-200 p-4 md:p-8">
-      <div className="max-w-3xl mx-auto">
-        {/* Card thông tin cá nhân */}
->>>>>>> ca03784cad36938cd5ef73874b4e396c243e0599
         <div className="card w-full bg-base-100 shadow-xl">
           <div className="card-body">
             <h2 className="card-title text-3xl mb-6">Hồ sơ của bạn</h2>
