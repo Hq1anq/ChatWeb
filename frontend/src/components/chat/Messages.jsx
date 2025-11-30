@@ -1,17 +1,9 @@
-import React from 'react'
 import Message from './Message.jsx'
 import { useAuthStore } from '../../store/authStore'
+import { formatTime } from '../../lib/utils'
 
 const Messages = ({ messages }) => {
   const { user } = useAuthStore()
-
-  // Format thời gian
-  const formatTime = (timestamp) => {
-    const date = new Date(timestamp)
-    const hours = date.getHours().toString().padStart(2, '0')
-    const minutes = date.getMinutes().toString().padStart(2, '0')
-    return `${hours}:${minutes}`
-  }
 
   return (
     <div className="flex flex-col gap-4">
