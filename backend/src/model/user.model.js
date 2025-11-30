@@ -19,7 +19,9 @@ export const User = {
 
   async getAll() {
     const pool = await getConnection()
-    const result = await pool.request().query('SSELECT userid, email, fullname, profilepic FROM Users')
+    const result = await pool
+      .request()
+      .query('SELECT userid, email, fullname, profilepic FROM Users')
     return result.recordset
   },
 
