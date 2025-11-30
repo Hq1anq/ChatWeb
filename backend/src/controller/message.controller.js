@@ -3,11 +3,12 @@ import { User } from '../model/user.model.js'
 //Import từ socket.js để gửi tin nhắn realtime
 import { getReceiverSocketId, io } from '../lib/socket.js'
 
-export const getUsersForSidebar = async (req, res) => { // Thêm async
+export const getUsersForSidebar = async (req, res) => {
+  // Thêm async
   try {
     const loggedInUserId = req.user.userid
-    
-    const filteredUsers = await User.getExcept(loggedInUserId)
+
+    const filteredUsers = await User.getSidebarList(loggedInUserId)
 
     res.status(200).json(filteredUsers)
   } catch (error) {
@@ -33,13 +34,28 @@ export const sendMessage = async (req, res) => {
   try {
     const receiverid = req.params.id
     const senderid = req.user.userid
-    const { content, image } = req.body
+    const { content } = req.body
+
+    let file = ''
+    // Kiểm tra xem có file được upload không (req.file được thêm bởi Multer)
+    if (req.file) {
+      // Lưu đường dẫn public của file vào biến file
+      // Đường dẫn sẽ là /messages/tên_file_đã_lưu
+      file = `/messages/${req.file.filename}`
+    }
+
+    if (!content && !file) {
+      // Multer sẽ tự động xóa file đã upload nếu gặp lỗi ở đây
+      return res
+        .status(400)
+        .json({ message: 'Message content or file is required' })
+    }
 
     const newMessage = await Message.create({
       senderid,
       receiverid,
       content,
-      image,
+      file, // Sử dụng đường dẫn file đã xác định
     })
 
     // Logic Real-time

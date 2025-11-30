@@ -9,8 +9,8 @@ const Message = {
       .input('senderid', sql.Int, senderid)
       .input('receiverid', sql.Int, receiverid)
       .input('content', sql.NVarChar(sql.MAX), content)
-      .input('file', sql.NVarChar(100), file).query(`
-				INSERT INTO Messages (senderid, receiverid, content, file)
+      .input('file', sql.NVarChar(sql.MAX), file ?? null).query(`
+				INSERT INTO Messages (senderid, receiverid, content, [file])
 				OUTPUT INSERTED.*
 				VALUES (@senderid, @receiverid, @content, @file);
 			`)

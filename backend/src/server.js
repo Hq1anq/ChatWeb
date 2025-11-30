@@ -17,10 +17,17 @@ app.use(cookieParser())
 
 // Cấu hình Static Files (Sửa lại cho chắc chắn)
 // Khi Frontend gọi: http://localhost:5000/profilepics/abc.jpg
-// Server sẽ tìm trong: /YourProject/public/profilepics/abc.jpg
+// Server sẽ tìm trong: /backend/public/profilepics/abc.jpg
 app.use(
   '/profilepics',
   express.static(path.join(__dirname, 'public/profilepics'))
+)
+// Bổ sung: Cấu hình Static Files cho tin nhắn (hình ảnh, file)
+// Khi Frontend gọi: http://localhost:5000/messages/xyz.jpg
+// Server sẽ tìm trong: /backend/public/messages/xyz.jpg
+app.use(
+  '/messages', // <-- Endpoint URL
+  express.static(path.join(__dirname, 'public/messages')) // <-- Đường dẫn thư mục vật lý
 )
 
 app.use(
