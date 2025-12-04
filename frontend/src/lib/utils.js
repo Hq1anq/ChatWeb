@@ -34,10 +34,7 @@ export function formatTimeAgo(isoUTCString) {
   if (diffDays < 7) return `${diffDays}d`
 
   // Weeks
-  if (diffWeeks < 4) return `${diffWeeks}w`
-
-  // Months
-  return `${diffMonths}m`
+  return `${diffWeeks}w`
 }
 
 export const isImageFile = (filePath) => {
@@ -64,5 +61,5 @@ export const getFileName = (filePath) => {
     : ''
   // Tách chuỗi theo '-', loại bỏ phần tử đầu tiên (metadata), và nối phần còn lại
   const parts = fullFileName.split('-')
-  return parts.length > 1 ? parts.slice(1) : fullFileName
+  return parts.length > 1 ? parts.slice(1).join('-') : fullFileName
 }

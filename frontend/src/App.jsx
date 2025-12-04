@@ -17,7 +17,7 @@ function App() {
 
   useEffect(() => {
     checkAuth()
-  }, [checkAuth])
+  }, [])
 
   return (
     <div data-theme="" className="flex flex-col h-screen w-screen">
