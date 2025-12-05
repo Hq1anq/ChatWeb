@@ -9,6 +9,7 @@ import HomePage from './pages/HomePage'
 import ProfilePage from './pages/ProfilePage'
 import SettingsPage from './pages/SettingsPage'
 import NotFoundPage from './pages/NotFoundPage'
+import VideoCallPage from './pages/VideoCallPage'
 
 import Navbar from './components/Navbar'
 
@@ -46,6 +47,7 @@ function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
+      <VideoCallPage />
     </div>
   )
 }

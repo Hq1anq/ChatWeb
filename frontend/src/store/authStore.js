@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import axiosInstance from '../lib/axios'
 import { toast } from 'react-hot-toast'
 import { io } from 'socket.io-client'
+import { useCallStore } from './callStore'
 
 export const useAuthStore = create(
   persist(
@@ -96,81 +97,84 @@ export const useAuthStore = create(
       },
 
       updateProfilePic: async (data) => {
-    set({ isUpdatingProfile: true }) // Bắt đầu loading
-    try {
-      const response = await axiosInstance.put(
-        '/auth/update-profile/pic',
-        data,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
-      )
+        set({ isUpdatingProfile: true }) // Bắt đầu loading
+        try {
+          const response = await axiosInstance.put(
+            '/auth/update-profile/pic',
+            data,
+            { headers: { 'Content-Type': 'multipart/form-data' } }
+          )
 
-      console.log("SERVER TRẢ VỀ:", response.data); // <--- KIỂM TRA LOG NÀY
+          console.log('SERVER TRẢ VỀ:', response.data) // <--- KIỂM TRA LOG NÀY
 
-      set((state) => {
-        // Logic bảo vệ Bio:
-        // Ưu tiên Bio từ Server trả về.
-        // Nếu Server không trả về (undefined), lấy Bio cũ của User.
-        // Nếu Bio cũ không có, lấy chuỗi rỗng.
-        const incomingBio = response.data.bio;
-        const currentBio = state.user.bio;
-        
-        const finalBio = (incomingBio !== undefined && incomingBio !== null) 
-                          ? incomingBio 
-                          : (currentBio || "");
+          set((state) => {
+            // Logic bảo vệ Bio:
+            // Ưu tiên Bio từ Server trả về.
+            // Nếu Server không trả về (undefined), lấy Bio cũ của User.
+            // Nếu Bio cũ không có, lấy chuỗi rỗng.
+            const incomingBio = response.data.bio
+            const currentBio = state.user.bio
 
-        const newUserState = {
-          ...state.user,       // Giữ lại data cũ
-          ...response.data,    // Ghi đè data mới
-          bio: finalBio        // Đảm bảo Bio luôn đúng
-        };
+            const finalBio =
+              incomingBio !== undefined && incomingBio !== null
+                ? incomingBio
+                : currentBio || ''
 
-        console.log("USER MỚI SẼ LƯU:", newUserState); // <--- KIỂM TRA LOG NÀY
-        return { user: newUserState };
-      })
+            const newUserState = {
+              ...state.user, // Giữ lại data cũ
+              ...response.data, // Ghi đè data mới
+              bio: finalBio, // Đảm bảo Bio luôn đúng
+            }
 
-      toast.success('Cập nhật ảnh thành công!')
-      return { success: true }
-    } catch (error) {
-      console.error("Lỗi update pic:", error);
-      toast.error(error.response?.data?.message || 'Lỗi cập nhật')
-      return { success: false }
-    } finally {
-      // Đảm bảo luôn tắt loading để nút bấm được trở lại
-      set({ isUpdatingProfile: false }) 
-    }
-  },
+            console.log('USER MỚI SẼ LƯU:', newUserState) // <--- KIỂM TRA LOG NÀY
+            return { user: newUserState }
+          })
+
+          toast.success('Cập nhật ảnh thành công!')
+          return { success: true }
+        } catch (error) {
+          console.error('Lỗi update pic:', error)
+          toast.error(error.response?.data?.message || 'Lỗi cập nhật')
+          return { success: false }
+        } finally {
+          // Đảm bảo luôn tắt loading để nút bấm được trở lại
+          set({ isUpdatingProfile: false })
+        }
+      },
       updateProfileBio: async (data) => {
-        set({ isUpdatingProfile: true });
+        set({ isUpdatingProfile: true })
         try {
           // Gọi API mới tạo
-          const res = await axiosInstance.put('/auth/update-profile/bio', { bio: data.bio });
-      
-           // Cập nhật lại user trong store (giữ nguyên ảnh cũ, chỉ thay bio mới)
-          set({ user: res.data }); 
-          toast.success("Cập nhật giới thiệu thành công!");
-          return { success: true };
+          const res = await axiosInstance.put('/auth/update-profile/bio', {
+            bio: data.bio,
+          })
+
+          // Cập nhật lại user trong store (giữ nguyên ảnh cũ, chỉ thay bio mới)
+          set({ user: res.data })
+          toast.success('Cập nhật giới thiệu thành công!')
+          return { success: true }
         } catch (error) {
-          const msg = error.response?.data?.message || "Lỗi cập nhật Bio";
-          toast.error(msg);
-          return { success: false, error: msg };
+          const msg = error.response?.data?.message || 'Lỗi cập nhật Bio'
+          toast.error(msg)
+          return { success: false, error: msg }
         } finally {
-          set({ isUpdatingProfile: false });
+          set({ isUpdatingProfile: false })
         }
       },
       updatePassword: async (data) => {
-    set({ isUpdatingProfile: true })
-    try {
-      await axiosInstance.put('/auth/update-password', data)
-      toast.success("Đổi mật khẩu thành công!")
-      return { success: true }
-    } catch (error) {
-      const msg = error.response?.data?.message || "Đổi mật khẩu thất bại"
-      toast.error(msg)
-      return { success: false, error: msg }
-    } finally {
-      set({ isUpdatingProfile: false })
-    }
-  },
+        set({ isUpdatingProfile: true })
+        try {
+          await axiosInstance.put('/auth/update-password', data)
+          toast.success('Đổi mật khẩu thành công!')
+          return { success: true }
+        } catch (error) {
+          const msg = error.response?.data?.message || 'Đổi mật khẩu thất bại'
+          toast.error(msg)
+          return { success: false, error: msg }
+        } finally {
+          set({ isUpdatingProfile: false })
+        }
+      },
 
       // Clear error
       clearError: () => set({ error: null }),
@@ -191,9 +195,18 @@ export const useAuthStore = create(
         socket.on('online-users', (userIds) => {
           set({ onlineUsers: userIds })
         })
+
+        // --- THÊM: Đăng ký Call Events ---
+        useCallStore.getState().subscribeToCallEvents()
+        // ---------------------------------
       },
       disconnectSocket: () => {
-        if (get().socket?.connected) get().socket.disconnect()
+        if (get().socket?.connected) {
+          // --- THÊM: Hủy đăng ký Call Events ---
+          useCallStore.getState().unsubscribeFromCallEvents()
+          // -------------------------------------
+          get().socket.disconnect()
+        }
       },
     }),
     {
