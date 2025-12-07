@@ -11,7 +11,7 @@ const Messages = ({ messages }) => {
         <Message
           key={msg.messageid}
           text={msg.content}
-          image={msg.image}
+          file={msg.file}
           fromMe={msg.senderid === user.userid || msg.senderid === 'me'}
           time={formatTime(msg.created)}
           isTemp={msg.isTemp} // Để hiển thị loading indicator
