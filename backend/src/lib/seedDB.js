@@ -21,6 +21,7 @@ async function seedDatabase() {
         email: 'alice@example.com',
         fullname: 'Alice Johnson',
         password: 'password123',
+        bio: 'Hello, I am Alice!',
       },
       {
         email: 'bob@example.com',
@@ -45,6 +46,7 @@ async function seedDatabase() {
         .input('email', user.email)
         .input('fullname', user.fullname)
         .input('password', hashedPassword)
+        .input('bio', user.bio || null)
         .query(
           'INSERT INTO Users (email, fullname, password) OUTPUT INSERTED.userid, INSERTED.email, INSERTED.fullname VALUES (@email, @fullname, @password)'
         )

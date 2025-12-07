@@ -9,7 +9,7 @@ export const User = {
       .input('email', sql.NVarChar(50), email)
       .input('fullname', sql.NVarChar(30), fullname)
       .input('password', sql.NVarChar(100), password)
-      .input('profilepic', sql.NVarChar(100), profilepic).query(`
+      .input('profilepic', sql.NVarChar(sql.MAX), profilepic).query(`
 				INSERT INTO Users (email, fullname, [password], profilepic)
         OUTPUT INSERTED.*
 				VALUES (@email, @fullname, @password, @profilepic);
@@ -48,22 +48,93 @@ export const User = {
     const result = await pool
       .request()
       .input('userid', sql.Int, userid)
-      .input('profilepic', sql.NVarChar(100), profilepic).query(`
+      .input('profilepic', sql.NVarChar(sql.MAX), profilepic).query(`
+        -- 1. Update Ảnh
         UPDATE Users
         SET profilepic = @profilepic
-        OUTPUT INSERTED.* -- Trả về dữ liệu mới ngay lập tức
         WHERE userid = @userid;
+
+        -- 2. Select lại TOÀN BỘ thông tin (Dùng ISNULL cho Bio)
+        SELECT 
+            userid, 
+            email, 
+            fullname, 
+            profilepic, 
+            ISNULL(bio, '') as bio -- <--- Quan trọng: Biến NULL thành ''
+        FROM Users 
+        WHERE userid = @userid;
+        SELECT userid, fullname, profilepic FROM Users WHERE userid = @userid;
       `)
     return result.recordset[0]
   },
 
-  async getExcept(excludeUserId) {
+  async getSidebarList(userid) {
+    const pool = await getConnection()
+    const result = await pool.request().input('userid', sql.Int, userid).query(`
+        SELECT
+          u.userid,
+          u.fullname,
+          u.profilepic,
+          -- Nếu Content NULL, trích xuất tên file gốc từ cột File
+          COALESCE(
+            mLatest.Content, 
+            CASE 
+              -- Kiểm tra File có tồn tại và có chứa dấu gạch ngang '-' không
+              WHEN mLatest.[file] IS NOT NULL AND CHARINDEX('-', mLatest.[file]) > 0 
+              -- Trích xuất chuỗi: bắt đầu từ sau dấu '-' đầu tiên
+              THEN SUBSTRING(
+                mLatest.[file], 
+                CHARINDEX('-', mLatest.[file]) + 1, 
+                LEN(mLatest.[file])
+              )
+              -- Nếu File tồn tại nhưng không có dấu '-', hiển thị toàn bộ tên file
+              WHEN mLatest.[file] IS NOT NULL THEN mLatest.[file]
+              ELSE NULL 
+            END
+          ) as latestMessage,
+          mLatest.created as latestTime
+        FROM Users u
+        OUTER APPLY (
+          SELECT TOP 1 Content, [file], created
+          FROM Messages
+          Where (senderid = @userid AND receiverid = u.userid)
+             OR (receiverid = @userid AND senderid = u.userid)
+          ORDER BY created DESC
+        ) mLatest
+        WHERE userid <> @userid
+        ORDER BY mLatest.created DESC`)
+    return result.recordset
+  },
+  async updateBio(userid, bio) {
+    // Nhận vào object chứa bio
     const pool = await getConnection()
     const result = await pool
       .request()
-      .input('excludeUserId', sql.Int, excludeUserId).query(`
-        SELECT userid, email, fullname, profilepic
-        FROM Users WHERE userid != @excludeUserId`)
-    return result.recordset
+      .input('userid', sql.Int, userid)
+      .input('bio', sql.NVarChar(500), bio).query(`
+      -- Bước 1: Update dữ liệu
+        UPDATE Users
+        SET bio = @bio
+        WHERE userid = @userid;
+
+        -- Bước 2: Select lại dữ liệu vừa update để trả về cho Frontend
+        SELECT userid, email, fullname, profilepic, bio
+        FROM Users
+        WHERE userid = @userid;
+    `)
+    return result.recordset[0]
+  },
+  async updatePassword(userid, newPassword) {
+    const pool = await getConnection()
+    await pool
+      .request()
+      .input('userid', sql.Int, userid)
+      .input('password', sql.NVarChar(255), newPassword) // Password đã hash
+      .query(`
+        UPDATE Users
+        SET password = @password
+        WHERE userid = @userid
+      `)
+    return true
   },
 }

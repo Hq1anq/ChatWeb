@@ -33,10 +33,10 @@ const fileFilter = (req, file, cb) => {
   else cb(new Error('Only image files are allowed'))
 }
 
-const upload = multer({
+const uploadProfilePic = multer({
   storage: storage,
   limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB
   fileFilter,
 })
 
-export default upload
+export default uploadProfilePic

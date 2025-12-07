@@ -15,19 +15,27 @@ const __dirname = path.resolve() // 4. Lấy đường dẫn gốc của dự á
 app.use(express.json())
 app.use(cookieParser())
 
-// Cấu hình Static Files (Sửa lại cho chắc chắn)
-// Khi Frontend gọi: http://localhost:5000/profilepics/abc.jpg
-// Server sẽ tìm trong: /YourProject/public/profilepics/abc.jpg
-app.use(
-  '/profilepics',
-  express.static(path.join(__dirname, 'public/profilepics'))
-)
-
 app.use(
   cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173', // Fallback nếu quên .env
     credentials: true, // Cho phép gửi cookie
   })
+)
+
+// Static file serving đặt sau cors
+// Cấu hình Static Files (Sửa lại cho chắc chắn)
+// Khi Frontend gọi: http://localhost:5000/profilepics/abc.jpg
+// Server sẽ tìm trong: /backend/public/profilepics/abc.jpg
+app.use(
+  '/profilepics',
+  express.static(path.join(__dirname, 'public/profilepics'))
+)
+// Bổ sung: Cấu hình Static Files cho tin nhắn (hình ảnh, file)
+// Khi Frontend gọi: http://localhost:5000/messages/xyz.jpg
+// Server sẽ tìm trong: /backend/public/messages/xyz.jpg
+app.use(
+  '/messages', // <-- Endpoint URL
+  express.static(path.join(__dirname, 'public/messages')) // <-- Đường dẫn thư mục vật lý
 )
 
 // Routes
