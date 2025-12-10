@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Send, Paperclip, X, Loader2, FileText } from 'lucide-react'
+import { Send, Paperclip, X, Loader2, FileText, Image } from 'lucide-react'
 import { useChatStore } from '../../store/chatStore'
 import toast from 'react-hot-toast'
 
@@ -11,7 +11,7 @@ const MessageInput = () => {
   const [fileAttachment, setFileAttachment] = useState(null)
   const fileInputRef = useRef(null)
 
-  // 1. Thêm Ref cho textarea để điều khiển chiều cao
+  // Ref cho textarea để điều khiển chiều cao
   const textareaRef = useRef(null)
 
   const { sendMessage, isSendingMessage, selectedUser } = useChatStore()
@@ -45,7 +45,7 @@ const MessageInput = () => {
       // Clear input sau khi gửi thành công
       setMessage('')
       setFileAttachment(null)
-      // 2. Reset chiều cao textarea về ban đầu sau khi gửi
+      // Reset chiều cao textarea về ban đầu sau khi gửi
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'
       }
@@ -85,7 +85,7 @@ const MessageInput = () => {
     }
   }
 
-  // 3. Hàm xử lý tự động co giãn chiều cao
+  // Hàm xử lý tự động co giãn chiều cao
   const handleInput = (e) => {
     setMessage(e.target.value)
     const target = e.target
@@ -93,7 +93,7 @@ const MessageInput = () => {
     target.style.height = `${target.scrollHeight}px`
   }
 
-  // 4. Hàm xử lý phím bấm (Enter vs Shift+Enter)
+  // Hàm xử lý phím bấm (Enter vs Shift+Enter)
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault() // Chặn xuống dòng mặc định
@@ -105,7 +105,7 @@ const MessageInput = () => {
     <div className="relative">
       {/* Image Preview */}
       {fileAttachment && (
-        <div className="mb-3 relative bg-base-200 p-3 rounded-lg border border-base-300 max-w-sm">
+        <div className="mb-3 relative bg-base-200 p-3 rounded-lg border border-base-300 max-w-xs md:max-w-sm">
           <div className="flex items-center gap-3">
             {fileAttachment.previewUrl ? (
               // Image preview
@@ -120,7 +120,7 @@ const MessageInput = () => {
                 {getFileIcon(fileAttachment.file)}
               </div>
             )}
-            <span className="truncate max-w-[200px]">
+            <span className="truncate max-w-[150px] md:max-w-[200px] text-sm">
               {fileAttachment.file.name}
             </span>
           </div>
@@ -135,8 +135,7 @@ const MessageInput = () => {
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="flex items-end gap-2">
-        {/* items-end để icon nằm dưới cùng */}
+      <form onSubmit={handleSubmit} className="flex items-end gap-1 md:gap-2">
         {/* Nút đính kèm file */}
         <input
           ref={fileInputRef}
@@ -148,33 +147,35 @@ const MessageInput = () => {
         />
         <button
           type="button"
-          className="btn btn-ghost btn-circle mb-1" // mb-1 để căn đều đáy với textarea
+          className="btn btn-ghost btn-circle btn-sm md:btn-md mb-1"
           onClick={() => fileInputRef.current?.click()}
           disabled={isSendingMessage}
         >
-          <Paperclip size={20} />
+          <Paperclip size={18} className="md:w-5 md:h-5" />
         </button>
-        {/* 5. Thay Input bằng Textarea */}
+
+        {/* Textarea */}
         <textarea
           ref={textareaRef}
           placeholder={isSendingMessage ? 'Đang gửi...' : 'Nhập tin nhắn...'}
-          className="textarea textarea-bordered w-full resize-none min-h-12 max-h-[150px] leading-normal py-3"
+          className="textarea textarea-bordered w-full resize-none min-h-10 md:min-h-12 max-h-[120px] md:max-h-[150px] leading-normal py-2 md:py-3 text-sm md:text-base"
           value={message}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
           disabled={isSendingMessage}
           rows={1}
         />
+
         {/* Nút gửi */}
         <button
           type="submit"
-          className="btn btn-primary btn-circle mb-1" // mb-1 để căn đều đáy với textarea
+          className="btn btn-primary btn-circle btn-sm md:btn-md mb-1"
           disabled={isSendingMessage || (!message.trim() && !fileAttachment)}
         >
           {isSendingMessage ? (
-            <Loader2 size={20} className="animate-spin" />
+            <Loader2 size={18} className="animate-spin md:w-5 md:h-5" />
           ) : (
-            <Send size={20} />
+            <Send size={18} className="md:w-5 md:h-5" />
           )}
         </button>
       </form>
@@ -183,3 +184,51 @@ const MessageInput = () => {
 }
 
 export default MessageInput
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

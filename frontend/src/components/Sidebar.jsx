@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { X, Search } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { useChatStore } from '../store/chatStore'
 import { formatTimeAgo } from '../lib/utils'
@@ -12,9 +13,7 @@ const Conversation = ({ user, isSelected, onlineUsers, onClick }) => {
     <div
       onClick={onClick}
       className={`flex gap-3 items-center p-3 rounded-lg cursor-pointer transition-colors
-        ${
-          isSelected ? 'bg-primary text-primary-content' : 'hover:bg-base-300'
-        }`}
+        ${isSelected ? 'bg-primary text-primary-content' : 'hover:bg-base-300'}`}
     >
       {/* Avatar với status online/offline */}
       <div className={`avatar shrink-0 ${isOnline ? 'online' : 'offline'}`}>
@@ -28,9 +27,7 @@ const Conversation = ({ user, isSelected, onlineUsers, onClick }) => {
             src={
               user.profilepic
                 ? `${import.meta.env.VITE_SERVER_URL}${user.profilepic}`
-                : `https://placehold.co/600x600/E5E7EB/333333?text=${user.fullname.charAt(
-                    0
-                  )}`
+                : `https://placehold.co/600x600/E5E7EB/333333?text=${user.fullname.charAt(0)}`
             }
             alt={`${user.fullname} avatar`}
           />
@@ -43,7 +40,7 @@ const Conversation = ({ user, isSelected, onlineUsers, onClick }) => {
       {/* Thông tin */}
       <div className="flex-1 relative min-w-0">
         <h3
-          className={`font-semibold ${
+          className={`font-semibold truncate pr-12 ${
             isSelected ? 'text-white' : 'text-base-content'
           }`}
         >
@@ -66,7 +63,7 @@ const Conversation = ({ user, isSelected, onlineUsers, onClick }) => {
             isSelected ? 'text-white/80' : 'text-base-content/70'
           }`}
         >
-          {user.latestMessage}
+          {user.latestMessage || 'Bắt đầu trò chuyện...'}
         </p>
       </div>
     </div>
@@ -75,8 +72,14 @@ const Conversation = ({ user, isSelected, onlineUsers, onClick }) => {
 
 const Sidebar = () => {
   const { onlineUsers } = useAuthStore()
-  const { getUsers, users, isUsersLoading, selectedUser, setSelectedUser } =
-    useChatStore()
+  const {
+    getUsers,
+    users,
+    isUsersLoading,
+    selectedUser,
+    setSelectedUser,
+    closeSidebar,
+  } = useChatStore()
   const [searchTerm, setSearchTerm] = useState('')
 
   // Lấy list cho lần đầu render
@@ -95,42 +98,67 @@ const Sidebar = () => {
   }
 
   return (
-    <div className="h-full w-72 flex flex-col bg-base-200 p-4">
-      {/* Thanh tìm kiếm */}
-      <form onSubmit={handleSearch} className="flex items-center gap-2 mb-4">
-        <input
-          type="text"
-          placeholder="Tìm kiếm..."
-          className="input input-bordered w-full"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </form>
+    <div className="h-full w-72 flex flex-col bg-base-200">
+      {/* Header với nút đóng trên mobile */}
+      <div className="p-4 border-b border-base-300">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Tin nhắn</h2>
+          <button
+            className="btn btn-ghost btn-circle btn-sm md:hidden"
+            onClick={closeSidebar}
+          >
+            <X size={20} />
+          </button>
+        </div>
 
-      {/* Đường kẻ ngang */}
-      <div className="divider m-0"></div>
+        {/* Thanh tìm kiếm */}
+        <form onSubmit={handleSearch} className="relative">
+          <Search
+            size={18}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"
+          />
+          <input
+            type="text"
+            placeholder="Tìm kiếm..."
+            className="input input-bordered w-full pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </form>
+      </div>
 
       {/* Danh sách cuộc trò chuyện */}
-      <div className="grow overflow-y-auto py-2 pr-2 -mr-2">
+      <div className="grow overflow-y-auto p-2">
         {isUsersLoading ? (
-          <div className="flex justify-center items-center h-full">
+          <div className="flex justify-center items-center h-32">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         ) : filteredUsers.length === 0 ? (
-          <div className="text-center text-base-content/60 mt-8">
-            Không tìm thấy người dùng
+          <div className="text-center text-base-content/60 mt-8 px-4">
+            {searchTerm
+              ? 'Không tìm thấy người dùng'
+              : 'Chưa có cuộc trò chuyện nào'}
           </div>
         ) : (
-          filteredUsers.map((user) => (
-            <Conversation
-              key={user.userid}
-              user={user}
-              isSelected={selectedUser?.userid === user.userid}
-              onlineUsers={onlineUsers}
-              onClick={() => setSelectedUser(user)}
-            />
-          ))
+          <div className="space-y-1">
+            {filteredUsers.map((user) => (
+              <Conversation
+                key={user.userid}
+                user={user}
+                isSelected={selectedUser?.userid === user.userid}
+                onlineUsers={onlineUsers}
+                onClick={() => setSelectedUser(user)}
+              />
+            ))}
+          </div>
         )}
+      </div>
+
+      {/* Footer với số người online */}
+      <div className="p-3 border-t border-base-300 text-center">
+        <span className="text-xs text-base-content/60">
+          {onlineUsers.length} người đang online
+        </span>
       </div>
     </div>
   )

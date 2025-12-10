@@ -12,11 +12,25 @@ export const useChatStore = create((set, get) => ({
   isLoadingMessages: false,
   isSendingMessage: false,
 
-  // Chọn user để chat
+  // ========== MỚI: State cho Sidebar Responsive ==========
+  isSidebarOpen: true,
+
+  toggleSidebar: () =>
+    set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+
+  closeSidebar: () => set({ isSidebarOpen: false }),
+
+  openSidebar: () => set({ isSidebarOpen: true }),
+
+  // Chọn user để chat (đã cập nhật để đóng sidebar trên mobile)
   setSelectedUser: (user) => {
     set({ selectedUser: user })
     if (user) {
       get().getMessages(user.userid)
+      // Tự đóng sidebar trên mobile khi chọn user
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        set({ isSidebarOpen: false })
+      }
     }
   },
 
@@ -26,7 +40,7 @@ export const useChatStore = create((set, get) => ({
       const response = await axiosInstance.get('/message/users')
       set({ users: response.data })
     } catch (error) {
-      toast.error(error.response.data.message)
+      toast.error(error.response?.data?.message || 'Lỗi khi tải danh sách')
     } finally {
       set({ isUsersLoading: false })
     }
@@ -56,12 +70,12 @@ export const useChatStore = create((set, get) => ({
     // Tạo tin nhắn tạm thời (Optimistic UI)
     const tempMessage = {
       messageid: `temp-${Date.now()}`,
-      senderid: 'me', // Sẽ được thay thế bằng userid thật
+      senderid: 'me',
       receiverid: selectedUser.userid,
       content: message,
       file: fileAttachment ? fileAttachment.file.name : null,
       created: new Date().toISOString(),
-      isTemp: true, // Đánh dấu là tin nhắn tạm
+      isTemp: true,
     }
 
     // Thêm tin nhắn vào UI ngay lập tức
@@ -75,7 +89,6 @@ export const useChatStore = create((set, get) => ({
       }
 
       if (fileAttachment) {
-        // Multer ở backend expects file với keyvalue 'image'
         formData.append('file', fileAttachment.file)
       }
 
@@ -91,24 +104,24 @@ export const useChatStore = create((set, get) => ({
 
       get().updateSidebarUser(response.data)
 
-      // Thay thế tin nhắn tạm bằng tin nhắn thật từ server
-      set({
-        messages: messages
+      // Thay thế tin nhắn tạm bằng tin nhắn thật từ server (FIX BUG)
+      set((state) => ({
+        messages: state.messages
           .filter((msg) => msg.messageid !== tempMessage.messageid)
           .concat(response.data),
-      })
+      }))
 
       return { success: true }
     } catch (error) {
       console.error('Lỗi khi gửi tin nhắn:', error)
       toast.error('Không thể gửi tin nhắn')
 
-      // Xóa tin nhắn tạm nếu gửi thất bại
-      set({
-        messages: messages.filter(
+      // Xóa tin nhắn tạm nếu gửi thất bại (FIX BUG)
+      set((state) => ({
+        messages: state.messages.filter(
           (msg) => msg.messageid !== tempMessage.messageid
         ),
-      })
+      }))
 
       return { success: false, error: error.response?.data?.message }
     } finally {
@@ -119,16 +132,15 @@ export const useChatStore = create((set, get) => ({
   // Cập nhật sidebar list (users array)
   updateSidebarUser: (message) => {
     set((state) => {
-      const { user } = useAuthStore.getState() // user hiện tại
+      const { user } = useAuthStore.getState()
       const targetUserId =
-        message.senderid === user.userid ? message.receiverid : message.senderid // người còn lại
+        message.senderid === user.userid ? message.receiverid : message.senderid
       const latestMessageContent =
         message.content || (message.file ? getFileName(message.file) : '')
 
       let updatedUsers = [...state.users]
       let targetUserIndex = -1
 
-      // Tìm user trong danh sách sidebar
       const targetUser = updatedUsers.find((u, index) => {
         if (u.userid === targetUserId) {
           targetUserIndex = index
@@ -144,10 +156,7 @@ export const useChatStore = create((set, get) => ({
           latestTime: message.created,
         }
 
-        // xóa user khỏi vị trí hiện tại
         updatedUsers.splice(targetUserIndex, 1)
-
-        // thêm user vào đầu danh sách (reorder)
         updatedUsers.unshift(updatedTargetUser)
       }
 
@@ -164,7 +173,6 @@ export const useChatStore = create((set, get) => ({
     const socket = useAuthStore.getState().socket
 
     socket.on('newMessage', (newMessage) => {
-      // Caapj nhaatj side bar khi có tin nhắn mới
       updateSidebarUser(newMessage)
 
       if (newMessage.senderid === selectedUser.userid)
