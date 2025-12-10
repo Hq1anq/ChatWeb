@@ -63,3 +63,47 @@ export const getFileName = (filePath) => {
   const parts = fullFileName.split('-')
   return parts.length > 1 ? parts.slice(1).join('-') : fullFileName
 }
+
+// ========== MỚI: Các hàm cho Date Separator ==========
+
+// Format ngày để hiển thị separator
+export const formatDateSeparator = (timestamp) => {
+  const date = new Date(timestamp)
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  // Reset time để so sánh chỉ ngày
+  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const todayOnly = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  )
+  const yesterdayOnly = new Date(
+    yesterday.getFullYear(),
+    yesterday.getMonth(),
+    yesterday.getDate()
+  )
+
+  if (dateOnly.getTime() === todayOnly.getTime()) {
+    return 'Hôm nay'
+  } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
+    return 'Hôm qua'
+  } else {
+    // Format: "Thứ Hai, 15/01/2025"
+    const options = {
+      weekday: 'long',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }
+    return date.toLocaleDateString('vi-VN', options)
+  }
+}
+
+// Lấy date string để so sánh (YYYY-MM-DD)
+export const getDateKey = (timestamp) => {
+  const date = new Date(timestamp)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
