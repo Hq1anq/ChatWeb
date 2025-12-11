@@ -47,7 +47,7 @@ const Navbar = () => {
                   src={
                     user?.profilepic
                       ? `${import.meta.env.VITE_SERVER_URL}${user?.profilepic}`
-                      : `https://placehold.co/600x600/E5E7EB/333333?text=${user?.fullname.charAt(
+                      : `https://placehold.co/600x600/E5E7EB/333333?text=${user?.fullname?.charAt(
                           0
                         )}`
                   }
