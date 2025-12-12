@@ -1,6 +1,6 @@
 import { useAuthStore } from '../../store/authStore'
 import { useChatStore } from '../../store/chatStore'
-import { isImageFile, getFileName } from '../../lib/utils'
+import { isImageFile, getFileName, formatTime } from '../../lib/utils'
 import { Loader2, FileText, Download } from 'lucide-react'
 import axiosInstance from '../../lib/axios'
 
@@ -97,7 +97,7 @@ const Message = ({ fromMe, text, file, time, isTemp }) => {
         )}
 
         {text && (
-          <p className="whitespace-pre-wrap break-words text-left min-w-0 text-sm md:text-base">
+          <p className="whitespace-pre-wrap wrap-break-word text-left min-w-0 text-sm md:text-base">
             {text}
           </p>
         )}
@@ -119,14 +119,6 @@ const Message = ({ fromMe, text, file, time, isTemp }) => {
 
 const Messages = ({ messages }) => {
   const { user } = useAuthStore()
-
-  const formatTime = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleTimeString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
 
   return (
     <div className="flex flex-col gap-2">
