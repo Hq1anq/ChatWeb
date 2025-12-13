@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { Send, Paperclip, X, Loader2, FileText, Image } from 'lucide-react'
 import { useChatStore } from '../../store/chatStore'
 import toast from 'react-hot-toast'
+import { getProfilePic } from '../../lib/utils'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 
@@ -33,10 +34,6 @@ const MessageInput = () => {
       toast.error('Vui lòng nhập tin nhắn hoặc chọn file')
       return
     }
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
     if (!selectedUser) {
       toast.error('Vui lòng chọn người nhận')
       return
@@ -161,7 +158,7 @@ const MessageInput = () => {
                           <div className="avatar w-6 h-6">
                               <img 
                                 className="rounded-full object-cover" 
-                                src={member.profilepic ? `${import.meta.env.VITE_SERVER_URL}${member.profilepic}` : "https://placehold.co/50"} 
+                                src={getProfilePic(member)} 
                                 alt="avatar"
                               />
                           </div>

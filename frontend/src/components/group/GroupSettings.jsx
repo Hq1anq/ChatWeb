@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"; // <--- Thêm useState
 import { X, Shield, LogOut, Edit2, Check } from "lucide-react"; // <--- Thêm Edit2, Check
 import { useChatStore } from "../../store/chatStore";
 import { useAuthStore } from "../../store/authStore";
+import { getProfilePic } from "../../lib/utils";
 
 const GroupSettings = ({ onClose }) => {
   const { selectedUser, getGroupMembers, groupMembers, isMessagesLoading, updateNickname } = useChatStore();
@@ -84,7 +85,7 @@ const GroupSettings = ({ onClose }) => {
             <div key={member.userid} className="flex items-center gap-3 group">
             <div className="avatar">
                 <div className="w-10 h-10 rounded-full border border-base-200">
-                <img src={member.profilepic ? `${import.meta.env.VITE_SERVER_URL}${member.profilepic}` : `https://placehold.co/600x600/E5E7EB/333333?text=${member.fullname.charAt(0)}`} alt="avt" />
+                <img src={getProfilePic(member)} alt="avt" />
                 </div>
             </div>
 

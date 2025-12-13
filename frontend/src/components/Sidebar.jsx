@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { X, Search, Users, MessageSquare, Plus } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { useChatStore } from '../store/chatStore'
-import { formatTimeAgo } from '../lib/utils'
+import { formatTimeAgo, getProfilePic } from '../lib/utils'
 import CreateGroupModal from './group/CreateGroupModal' // Đảm bảo đã import file bạn tạo ở bước trước
 
 // Component hiển thị Item (dùng chung cho cả User và Group)
@@ -10,7 +10,7 @@ const SidebarItem = ({ item, isSelected, isOnline, onClick, isGroup }) => {
   const { user } = useAuthStore();
   const imageSrc = isGroup 
     ? (item.group_pic || "https://placehold.co/600x600/2563EB/FFFFFF?text=G")
-    : (item.profilepic ? `${import.meta.env.VITE_SERVER_URL}${item.profilepic}` : `https://placehold.co/600x600/E5E7EB/333333?text=${item.fullname.charAt(0)}`);
+    : getProfilePic(item);
   
   const name = isGroup ? item.name : item.fullname;
 

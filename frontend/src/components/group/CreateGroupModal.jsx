@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, Search, Users } from "lucide-react";
 import { useChatStore } from "../../store/chatStore";
 import toast from "react-hot-toast";
+import { getProfilePic } from "../../lib/utils";
 
 const CreateGroupModal = ({ isOpen, onClose }) => {
   const { users, createGroup, isCreatingGroup } = useChatStore();
@@ -111,7 +112,7 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
                       onChange={() => toggleMember(user.userid)}
                     />
                     <img
-                      src={user.profilepic || "/avatar.png"}
+                      src={getProfilePic(user)}
                       alt={user.fullname}
                       className="size-8 rounded-full object-cover"
                     />

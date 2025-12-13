@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { useAuthStore } from '../store/authStore'
 import { useNotificationStore } from '../store/notificationStore'
 import { useChatStore } from '../store/chatStore' // Import chatStore để clear tin nhắn
-import { formatTimeAgo } from '../lib/utils'
+import { formatTimeAgo, getProfilePic } from '../lib/utils'
 
 const Navbar = () => {
   const {
@@ -92,7 +92,7 @@ const Navbar = () => {
                 </div>
               </div>
 
-              <div tabIndex={0} className="mt-3 z-[1] card card-compact dropdown-content w-80 bg-base-100 shadow-xl border border-base-200">
+              <div tabIndex={0} className="mt-3 z-1 card card-compact dropdown-content w-80 bg-base-100 shadow-xl border border-base-200">
                 <div className="card-body p-0 max-h-[400px] overflow-y-auto">
                   <div className="p-3 border-b border-base-200 font-bold bg-base-200/50 sticky top-0 backdrop-blur-sm">
                     Thông báo
@@ -114,17 +114,13 @@ const Navbar = () => {
                           <div className="avatar placeholder">
                             <div className="w-10 h-10 rounded-full border border-base-300">
                               <img
-                                src={
-                                  notif.senderPic
-                                    ? `${import.meta.env.VITE_SERVER_URL}${notif.senderPic}`
-                                    : `https://placehold.co/600x600/E5E7EB/333333?text=${notif.senderName?.charAt(0).toUpperCase() || '?'}`
-                                }
+                                src={getProfilePic(notif)}
                                 alt="Sender"
                               />
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm break-words"><span className="font-bold">{notif.senderName}</span> {notif.content}</p>
+                            <p className="text-sm wrap-break-word"><span className="font-bold">{notif.senderName}</span> {notif.content}</p>
                             <p className="text-xs text-base-content/50 mt-1">{formatTimeAgo(notif.created_at)}</p>
                           </div>
                           {!notif.is_read && <div className="w-2 h-2 bg-primary rounded-full mt-2 shrink-0"></div>}
@@ -142,7 +138,7 @@ const Navbar = () => {
                 <div className="w-10 rounded-full flex items-center justify-center border border-base-300">
                   <img
                     alt="User Avatar"
-                    src={user.profilepic ? `${import.meta.env.VITE_SERVER_URL}${user.profilepic}` : `https://placehold.co/600x600/E5E7EB/333333?text=${user.fullname?.charAt(0)}`}
+                    src={getProfilePic(user)}
                   />
                 </div>
               </label>

@@ -1,7 +1,3 @@
-import { useEffect, useRef } from 'react'
-import Messages from './chat/Messages.jsx'
-import MessageInput from './chat/MessageInput.jsx'
-import { Phone, Video, Info, Menu, ArrowLeft } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import Messages from './chat/Messages.jsx'
 import MessageInput from './chat/MessageInput.jsx'
@@ -9,6 +5,7 @@ import GroupSettings from './group/GroupSettings.jsx' // Component bạn đã t�
 import { Phone, Video, Info, Menu, ArrowLeft, Settings } from 'lucide-react'
 import { useChatStore } from '../store/chatStore'
 import { useAuthStore } from '../store/authStore'
+import { getProfilePic } from '../lib/utils.js'
 
 const MessageContainer = () => {
   const {
@@ -73,7 +70,7 @@ const MessageContainer = () => {
   const chatName = isGroup ? selectedUser.name : selectedUser.fullname
   const chatAvatar = isGroup 
     ? (selectedUser.group_pic || "https://placehold.co/600x600/2563EB/FFFFFF?text=G")
-    : (selectedUser.profilepic ? `${import.meta.env.VITE_SERVER_URL}${selectedUser.profilepic}` : `https://placehold.co/600x600/E5E7EB/333333?text=${selectedUser.fullname.charAt(0)}`)
+    : getProfilePic(selectedUser)
 
   return (
     <div className="flex h-full w-full">

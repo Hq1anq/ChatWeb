@@ -107,3 +107,8 @@ export const getDateKey = (timestamp) => {
   const date = new Date(timestamp)
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
+
+export const getProfilePic = (user) => {
+  if (!user) return '';
+  return user.profilepic ? `${import.meta.env.VITE_SERVER_URL}${user.profilepic}` : `https://placehold.co/600x600/E5E7EB/333333?text=${user.fullname?.charAt(0)}`
+}

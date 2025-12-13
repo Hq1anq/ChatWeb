@@ -154,11 +154,8 @@ const Message = ({ message, fromMe, time, highlightRegex }) => {
           </div>
         )}
 
-        {text && (
-          <p className="whitespace-pre-wrap wrap-break-word text-left min-w-0 text-sm md:text-base">
-            {text}
-          </p>
-        )}
+        {/* Render text đã highlight */}
+        {text && <p className="whitespace-pre-wrap wrap-break-word text-left min-w-0 text-sm md:text-base">{renderContent(text)}</p>}
 
         {isTemp && (
           <div className="flex items-center gap-2 mt-1 text-xs opacity-70">
@@ -166,9 +163,6 @@ const Message = ({ message, fromMe, time, highlightRegex }) => {
             Đang gửi...
           </div>
         )}
-        
-        {/* Render text đã highlight */}
-        {text && <p className="whitespace-pre-wrap break-words text-left min-w-0 text-sm md:text-base">{renderContent(text)}</p>}
         
         {isTemp && <div className="flex items-center gap-2 mt-1 text-xs opacity-70"><Loader2 size={12} className="animate-spin" /> Đang gửi...</div>}
       </div>
