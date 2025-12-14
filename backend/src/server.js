@@ -2,16 +2,38 @@ import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import path from 'path' // 2. Import path
+import https from 'https'
+import http from 'http'
+import fs from 'fs'
 
 // Import từ file socket của bạn
-import { app, server } from './lib/socket.js'
+import { initializeSocketIO } from './lib/socket.js'
 
 import authRoutes from './route/auth.route.js'
 import messageRoutes from './route/message.route.js'
 import groupRoutes from './route/group.route.js' // <--- MỚI: Import Group Routes
-import notificationRoutes from './route/notification.route.js';
+import notificationRoutes from './route/notification.route.js'
 
-const __dirname = path.resolve() // 4. Lấy đường dẫn gốc của dự án
+const __dirname = path.resolve() // Lấy đường dẫn gốc của dự án
+const PORT = process.env.PORT || 5000
+
+const app = express()
+
+const isHttps = process.env.CLIENT_URL?.startsWith('https')
+
+let server
+
+if (isHttps) {
+  const options = {
+    key: fs.readFileSync(path.join(__dirname, 'cert.key')),
+    cert: fs.readFileSync(path.join(__dirname, 'cert.crt')),
+  }
+  server = https.createServer(options, app)
+} else {
+  server = http.createServer(app)
+}
+
+initializeSocketIO(server, app)
 
 // Middleware
 app.use(express.json())
@@ -19,7 +41,7 @@ app.use(cookieParser())
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173', // Fallback nếu quên .env
+    origin: process.env.CLIENT_URL,
     credentials: true, // Cho phép gửi cookie
   })
 )
@@ -40,10 +62,9 @@ app.use(
 app.use('/api/auth', authRoutes)
 app.use('/api/message', messageRoutes)
 app.use('/api/groups', groupRoutes) // <--- MỚI: Sử dụng route groups
-app.use('/api/notifications', notificationRoutes);
+app.use('/api/notifications', notificationRoutes)
 
 // Khởi chạy server
-const PORT = process.env.PORT || 5000
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)
 })
