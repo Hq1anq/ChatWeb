@@ -1,6 +1,6 @@
 import { useAuthStore } from '../../store/authStore'
 import { useChatStore } from '../../store/chatStore'
-import { isImageFile, getFileName } from '../../lib/utils'
+import { isImageFile, getFileName, formatTime } from '../../lib/utils'
 import { Loader2, FileText, Download } from 'lucide-react'
 import axiosInstance from '../../lib/axios'
 import { useRef, useEffect, useMemo } from 'react'
@@ -119,10 +119,52 @@ const Message = ({ message, fromMe, time, highlightRegex }) => {
       
       <div className={`chat-bubble flex flex-col ${bubbleColor} max-w-[85%] sm:max-w-xs md:max-w-sm lg:max-w-md shadow-sm`}>
         {file && (
-             <div className="mb-2">
-                {isImage ? <img src={fileUrl} className="max-w-full rounded-lg" onClick={() => window.open(fileUrl, '_blank')} /> 
-                         : <div className="flex gap-2 p-2 bg-base-100 rounded-lg text-primary"><FileText size={18} /><span>{fileName}</span></div>}
-             </div>
+          <div className="mb-2">
+            {isImage ? (
+              <img
+                src={fileUrl}
+                alt="Attached"
+                className="max-w-full rounded-lg border border-black/10"
+              />
+            ) : (
+              <div className="flex items-center justify-between gap-2 p-2 bg-base-100 rounded-lg border border-base-300 transition-colors">
+                <a
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download={fileName}
+                  className="flex items-center gap-2 p-1 md:p-2 bg-base-100 rounded-lg text-primary hover:bg-base-200 transition-colors min-w-0"
+                  title={`Tải xuống ${fileName}`}
+                >
+                  <FileText size={18} className="shrink-0 text-base-content/80" />
+                  <span className="truncate max-w-[100px] md:max-w-[150px] font-medium text-xs md:text-sm text-base-content/80">
+                    {fileName}
+                  </span>
+                </a>
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  className="btn btn-ghost btn-xs btn-circle text-primary hover:bg-base-200 shrink-0"
+                  title={`Tải xuống ${fileName}`}
+                >
+                  <Download size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {text && (
+          <p className="whitespace-pre-wrap wrap-break-word text-left min-w-0 text-sm md:text-base">
+            {text}
+          </p>
+        )}
+
+        {isTemp && (
+          <div className="flex items-center gap-2 mt-1 text-xs opacity-70">
+            <Loader2 size={12} className="animate-spin" />
+            Đang gửi...
+          </div>
         )}
         
         {/* Render text đã highlight */}
