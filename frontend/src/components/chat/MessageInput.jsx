@@ -3,25 +3,26 @@ import { Send, Paperclip, X, Loader2, FileText, Image } from 'lucide-react'
 import { useChatStore } from '../../store/chatStore'
 import toast from 'react-hot-toast'
 
-// Hằng số cho dung lượng file tối đa (5MB như config bên backend)
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 
 const MessageInput = () => {
   const [message, setMessage] = useState('')
   const [fileAttachment, setFileAttachment] = useState(null)
+  
+  // Ref
   const fileInputRef = useRef(null)
-
-  // Ref cho textarea để điều khiển chiều cao
   const textareaRef = useRef(null)
 
-  const { sendMessage, isSendingMessage, selectedUser } = useChatStore()
+  // Store
+  const { sendMessage, isSendingMessage, selectedUser, groupMembers } = useChatStore()
+  
+  // States cho Tagging (@)
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [cursorPosition, setCursorPosition] = useState(0);
 
-  // Function to render the appropriate icon based on file type
   const getFileIcon = (file) => {
-    if (file.type.startsWith('image/')) {
-      return <Image size={24} className="text-success" />
-    }
-    // You can add more specific checks here (e.g., for PDF, ZIP)
+    if (file.type.startsWith('image/')) return <Image size={24} className="text-success" />
     return <FileText size={24} className="text-info" />
   }
 
@@ -32,151 +33,185 @@ const MessageInput = () => {
       toast.error('Vui lòng nhập tin nhắn hoặc chọn file')
       return
     }
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
     if (!selectedUser) {
       toast.error('Vui lòng chọn người nhận')
       return
     }
 
-    // Gửi tin nhắn (với Optimistic UI)
     const result = await sendMessage(message, fileAttachment)
 
     if (result.success) {
-      // Clear input sau khi gửi thành công
       setMessage('')
       setFileAttachment(null)
-      // Reset chiều cao textarea về ban đầu sau khi gửi
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto'
-      }
+      setShowMentions(false) // Reset tag
+      if (textareaRef.current) textareaRef.current.style.height = 'auto'
     }
   }
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0]
     if (!file) return
-
-    // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       toast.error('Kích thước ảnh không được vượt quá 5MB')
       return
     }
 
     if (file.type.startsWith('image/')) {
-      // nếu là ảnh, tạo URL preview.
       const reader = new FileReader()
-      reader.onloadend = () => {
-        // Store both the File object and its preview URL
-        setFileAttachment({ file, previewUrl: reader.result })
-      }
+      reader.onloadend = () => setFileAttachment({ file, previewUrl: reader.result })
       reader.readAsDataURL(file)
     } else {
-      // For non-image files, store the File object and use null for the preview URL
       setFileAttachment({ file, previewUrl: null })
     }
-
-    toast.success(`File selected: ${file.name}`)
+    toast.success(`Đã chọn: ${file.name}`)
   }
 
   const removeFile = () => {
     setFileAttachment(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '' // Clear the actual file input value
-    }
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  // Hàm xử lý tự động co giãn chiều cao
   const handleInput = (e) => {
-    setMessage(e.target.value)
-    const target = e.target
-    target.style.height = 'auto'
-    target.style.height = `${target.scrollHeight}px`
+    const val = e.target.value;
+    const selectionStart = e.target.selectionStart;
+    setMessage(val);
+    setCursorPosition(selectionStart);
+    
+    // Auto resize
+    e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`;
+
+    // --- LOGIC TAG ---
+    // Tìm dấu @ gần con trỏ nhất
+    const textUpToCursor = val.slice(0, selectionStart);
+    const lastAtPos = textUpToCursor.lastIndexOf('@');
+
+    if (lastAtPos !== -1) {
+        // Kiểm tra xem @ có hợp lệ không (đầu dòng hoặc sau khoảng trắng)
+        const isStartOfLine = lastAtPos === 0;
+        const isPrecededBySpace = textUpToCursor[lastAtPos - 1] === ' ' || textUpToCursor[lastAtPos - 1] === '\n';
+
+        if (isStartOfLine || isPrecededBySpace) {
+            const query = textUpToCursor.slice(lastAtPos + 1);
+            // Chỉ search nếu query không chứa dấu cách (để user gõ tên xong là thôi)
+            // Hoặc cho phép dấu cách nếu bạn muốn support tên có dấu cách (như "Alice Johnson")
+            // Ở đây cho phép dấu cách nhưng giới hạn độ dài
+            if (query.length < 30) { 
+                setMentionQuery(query);
+                setShowMentions(true);
+                return;
+            }
+        }
+    }
+    setShowMentions(false);
   }
 
-  // Hàm xử lý phím bấm (Enter vs Shift+Enter)
+  const handleSelectMention = (user) => {
+      const nameToInsert = user.nickname || user.fullname;
+      
+      // Cắt chuỗi để thay thế đoạn @query bằng @Name
+      const textUpToCursor = message.slice(0, cursorPosition);
+      const lastAtPos = textUpToCursor.lastIndexOf('@');
+      const textBeforeAt = message.slice(0, lastAtPos);
+      const textAfterCursor = message.slice(cursorPosition);
+      
+      const newMessage = `${textBeforeAt}@${nameToInsert} ${textAfterCursor}`;
+      
+      setMessage(newMessage);
+      setShowMentions(false);
+      
+      // Focus lại input
+      setTimeout(() => {
+          if(textareaRef.current) textareaRef.current.focus();
+      }, 0);
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault() // Chặn xuống dòng mặc định
-      handleSubmit(e) // Gửi form
+      e.preventDefault()
+      // Nếu đang hiện gợi ý tag thì chọn người đầu tiên (Optional)
+      // Ở đây ta ưu tiên gửi tin nhắn
+      handleSubmit(e)
     }
   }
+
+  // Lọc danh sách thành viên
+  const filteredMembers = showMentions 
+      ? (groupMembers || []).filter(m => 
+          (m.nickname || m.fullname).toLowerCase().includes(mentionQuery.toLowerCase())
+        )
+      : [];
 
   return (
     <div className="relative">
-      {/* Image Preview */}
+      {/* === POPUP GỢI Ý TAG === */}
+      {showMentions && filteredMembers.length > 0 && (
+          <div className="absolute bottom-full left-0 mb-2 w-64 bg-base-100 shadow-xl border border-base-300 rounded-lg overflow-hidden z-50">
+              <div className="p-2 bg-base-200 text-xs font-bold text-base-content/50">Gợi ý thành viên</div>
+              <ul className="max-h-40 overflow-y-auto">
+                  {filteredMembers.map(member => (
+                      <li 
+                        key={member.userid}
+                        className="flex items-center gap-2 p-2 hover:bg-primary/10 cursor-pointer transition-colors"
+                        onClick={() => handleSelectMention(member)}
+                      >
+                          <div className="avatar w-6 h-6">
+                              <img 
+                                className="rounded-full object-cover" 
+                                src={member.profilepic ? `${import.meta.env.VITE_SERVER_URL}${member.profilepic}` : "https://placehold.co/50"} 
+                                alt="avatar"
+                              />
+                          </div>
+                          <span className="text-sm font-medium truncate">{member.nickname || member.fullname}</span>
+                      </li>
+                  ))}
+              </ul>
+          </div>
+      )}
+
+      {/* File Preview */}
       {fileAttachment && (
         <div className="mb-3 relative bg-base-200 p-3 rounded-lg border border-base-300 max-w-xs md:max-w-sm">
           <div className="flex items-center gap-3">
             {fileAttachment.previewUrl ? (
-              // Image preview
-              <img
-                src={fileAttachment.previewUrl}
-                alt="Preview"
-                className="w-16 h-16 object-cover rounded-md border"
-              />
+              <img src={fileAttachment.previewUrl} alt="Preview" className="w-16 h-16 object-cover rounded-md border" />
             ) : (
-              // Non-image file icon and name
               <div className="flex flex-col items-center justify-center w-16 h-16 bg-base-300 rounded-md">
                 {getFileIcon(fileAttachment.file)}
               </div>
             )}
-            <span className="truncate max-w-[150px] md:max-w-[200px] text-sm">
-              {fileAttachment.file.name}
-            </span>
+            <span className="truncate max-w-[150px] md:max-w-[200px] text-sm">{fileAttachment.file.name}</span>
           </div>
-          <button
-            type="button"
-            onClick={removeFile}
-            className="absolute -top-2 -right-2 btn btn-circle btn-xs btn-error"
-          >
+          <button type="button" onClick={removeFile} className="absolute -top-2 -right-2 btn btn-circle btn-xs btn-error">
             <X size={14} />
           </button>
         </div>
       )}
 
-      {/* Form */}
+      {/* Input Form */}
       <form onSubmit={handleSubmit} className="flex items-end gap-1 md:gap-2">
-        {/* Nút đính kèm file */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="*"
-          className="hidden"
-          onChange={handleFileSelect}
-          disabled={isSendingMessage}
-        />
-        <button
-          type="button"
-          className="btn btn-ghost btn-circle btn-sm md:btn-md mb-1"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isSendingMessage}
-        >
+        <input ref={fileInputRef} type="file" accept="*" className="hidden" onChange={handleFileSelect} disabled={isSendingMessage} />
+        <button type="button" className="btn btn-ghost btn-circle btn-sm md:btn-md mb-1" onClick={() => fileInputRef.current?.click()} disabled={isSendingMessage}>
           <Paperclip size={18} className="md:w-5 md:h-5" />
         </button>
 
-        {/* Textarea */}
         <textarea
           ref={textareaRef}
           placeholder={isSendingMessage ? 'Đang gửi...' : 'Nhập tin nhắn...'}
           className="textarea textarea-bordered w-full resize-none min-h-10 md:min-h-12 max-h-[120px] md:max-h-[150px] leading-normal py-2 md:py-3 text-sm md:text-base"
           value={message}
-          onChange={handleInput}
+          onChange={handleInput} // Dùng hàm handleInput mới
           onKeyDown={handleKeyDown}
           disabled={isSendingMessage}
           rows={1}
+          onClick={(e) => setCursorPosition(e.target.selectionStart)} // Cập nhật vị trí con trỏ khi click
         />
 
-        {/* Nút gửi */}
-        <button
-          type="submit"
-          className="btn btn-primary btn-circle btn-sm md:btn-md mb-1"
-          disabled={isSendingMessage || (!message.trim() && !fileAttachment)}
-        >
-          {isSendingMessage ? (
-            <Loader2 size={18} className="animate-spin md:w-5 md:h-5" />
-          ) : (
-            <Send size={18} className="md:w-5 md:h-5" />
-          )}
+        <button type="submit" className="btn btn-primary btn-circle btn-sm md:btn-md mb-1" disabled={isSendingMessage || (!message.trim() && !fileAttachment)}>
+          {isSendingMessage ? <Loader2 size={18} className="animate-spin md:w-5 md:h-5" /> : <Send size={18} className="md:w-5 md:h-5" />}
         </button>
       </form>
     </div>
@@ -184,51 +219,3 @@ const MessageInput = () => {
 }
 
 export default MessageInput
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
