@@ -25,7 +25,7 @@ const MessageContainer = () => {
   const chatId = isGroup ? selectedUser?.groupid : selectedUser?.userid
 
   useEffect(() => {
-    if (!chatId) return
+    if (chatId === undefined || chatId === null) return
     
     // Gọi hàm getMessages với tham số isGroup
     getMessages(chatId, isGroup)

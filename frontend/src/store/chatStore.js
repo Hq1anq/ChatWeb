@@ -22,13 +22,16 @@ export const useChatStore = create((set, get) => ({
   openSidebar: () => set({ isSidebarOpen: true }),
 
   setSelectedUser: (userOrGroup) => {
-    set({ selectedUser: userOrGroup })
+    // 1. Reset groupMembers về rỗng ngay lập tức để tránh hiện data của nhóm cũ
+    set({ selectedUser: userOrGroup, groupMembers: [] }); 
+
     if (userOrGroup) {
       const isGroup = userOrGroup.groupid !== undefined
       const id = isGroup ? userOrGroup.groupid : userOrGroup.userid
       
       get().getMessages(id, isGroup)
 
+      // Nếu là Mobile thì đóng sidebar
       if (typeof window !== 'undefined' && window.innerWidth < 768) {
         set({ isSidebarOpen: false })
       }
@@ -104,13 +107,13 @@ export const useChatStore = create((set, get) => ({
     const { selectedUser, messages, groupMembers } = get() 
     
     if (!selectedUser) return
-
+    const currentUser = useAuthStore.getState().user;
     const isGroup = selectedUser.groupid !== undefined
     const receiverId = isGroup ? selectedUser.groupid : selectedUser.userid
 
     const tempMessage = {
       messageid: `temp-${Date.now()}`,
-      senderid: 'me',
+      senderid: currentUser.userid,
       receiverid: isGroup ? null : receiverId,
       group_id: isGroup ? receiverId : null,
       content: message,

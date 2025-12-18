@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { Send, Paperclip, X, Loader2, FileText, Image } from 'lucide-react'
 import { useChatStore } from '../../store/chatStore'
+import { useAuthStore } from '../../store/authStore' // <--- 1. Import AuthStore
 import toast from 'react-hot-toast'
 import { getProfilePic } from '../../lib/utils'
 
@@ -10,14 +11,13 @@ const MessageInput = () => {
   const [message, setMessage] = useState('')
   const [fileAttachment, setFileAttachment] = useState(null)
   
-  // Ref
   const fileInputRef = useRef(null)
   const textareaRef = useRef(null)
 
-  // Store
+  // Lấy currentUser để lọc khỏi danh sách tag
+  const { user: currentUser } = useAuthStore() // <--- 2. Lấy user hiện tại
   const { sendMessage, isSendingMessage, selectedUser, groupMembers } = useChatStore()
   
-  // States cho Tagging (@)
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -44,7 +44,7 @@ const MessageInput = () => {
     if (result.success) {
       setMessage('')
       setFileAttachment(null)
-      setShowMentions(false) // Reset tag
+      setShowMentions(false)
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
     }
   }
@@ -78,25 +78,27 @@ const MessageInput = () => {
     setMessage(val);
     setCursorPosition(selectionStart);
     
-    // Auto resize
-    e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`;
+    const target = e.target;
+    target.style.height = 'auto';
+    target.style.height = `${target.scrollHeight}px`;
 
     // --- LOGIC TAG ---
-    // Tìm dấu @ gần con trỏ nhất
+    // Kiểm tra undefined thay vì ! để hỗ trợ groupid=0
+    if (selectedUser?.groupid === undefined) {
+        setShowMentions(false);
+        return;
+    }
+
     const textUpToCursor = val.slice(0, selectionStart);
     const lastAtPos = textUpToCursor.lastIndexOf('@');
 
     if (lastAtPos !== -1) {
-        // Kiểm tra xem @ có hợp lệ không (đầu dòng hoặc sau khoảng trắng)
         const isStartOfLine = lastAtPos === 0;
         const isPrecededBySpace = textUpToCursor[lastAtPos - 1] === ' ' || textUpToCursor[lastAtPos - 1] === '\n';
 
         if (isStartOfLine || isPrecededBySpace) {
             const query = textUpToCursor.slice(lastAtPos + 1);
-            // Chỉ search nếu query không chứa dấu cách (để user gõ tên xong là thôi)
-            // Hoặc cho phép dấu cách nếu bạn muốn support tên có dấu cách (như "Alice Johnson")
-            // Ở đây cho phép dấu cách nhưng giới hạn độ dài
-            if (query.length < 30) { 
+            if (query.length < 30 && !query.includes(' ')) { 
                 setMentionQuery(query);
                 setShowMentions(true);
                 return;
@@ -109,7 +111,6 @@ const MessageInput = () => {
   const handleSelectMention = (user) => {
       const nameToInsert = user.nickname || user.fullname;
       
-      // Cắt chuỗi để thay thế đoạn @query bằng @Name
       const textUpToCursor = message.slice(0, cursorPosition);
       const lastAtPos = textUpToCursor.lastIndexOf('@');
       const textBeforeAt = message.slice(0, lastAtPos);
@@ -120,7 +121,6 @@ const MessageInput = () => {
       setMessage(newMessage);
       setShowMentions(false);
       
-      // Focus lại input
       setTimeout(() => {
           if(textareaRef.current) textareaRef.current.focus();
       }, 0);
@@ -129,22 +129,20 @@ const MessageInput = () => {
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      // Nếu đang hiện gợi ý tag thì chọn người đầu tiên (Optional)
-      // Ở đây ta ưu tiên gửi tin nhắn
       handleSubmit(e)
     }
   }
 
-  // Lọc danh sách thành viên
+  // --- 3. LỌC DANH SÁCH THÀNH VIÊN ---
   const filteredMembers = showMentions 
-      ? (groupMembers || []).filter(m => 
-          (m.nickname || m.fullname).toLowerCase().includes(mentionQuery.toLowerCase())
-        )
+      ? (groupMembers || [])
+          .filter(m => m.userid !== currentUser?.userid) // <--- Loại bỏ bản thân
+          .filter(m => (m.nickname || m.fullname).toLowerCase().includes(mentionQuery.toLowerCase()))
       : [];
 
   return (
     <div className="relative">
-      {/* === POPUP GỢI Ý TAG === */}
+      {/* Popup Gợi ý Tag */}
       {showMentions && filteredMembers.length > 0 && (
           <div className="absolute bottom-full left-0 mb-2 w-64 bg-base-100 shadow-xl border border-base-300 rounded-lg overflow-hidden z-50">
               <div className="p-2 bg-base-200 text-xs font-bold text-base-content/50">Gợi ý thành viên</div>
@@ -188,7 +186,7 @@ const MessageInput = () => {
         </div>
       )}
 
-      {/* Input Form */}
+      {/* Form */}
       <form onSubmit={handleSubmit} className="flex items-end gap-1 md:gap-2">
         <input ref={fileInputRef} type="file" accept="*" className="hidden" onChange={handleFileSelect} disabled={isSendingMessage} />
         <button type="button" className="btn btn-ghost btn-circle btn-sm md:btn-md mb-1" onClick={() => fileInputRef.current?.click()} disabled={isSendingMessage}>
@@ -200,11 +198,11 @@ const MessageInput = () => {
           placeholder={isSendingMessage ? 'Đang gửi...' : 'Nhập tin nhắn...'}
           className="textarea textarea-bordered w-full resize-none min-h-10 md:min-h-12 max-h-[120px] md:max-h-[150px] leading-normal py-2 md:py-3 text-sm md:text-base"
           value={message}
-          onChange={handleInput} // Dùng hàm handleInput mới
+          onChange={handleInput} 
           onKeyDown={handleKeyDown}
           disabled={isSendingMessage}
           rows={1}
-          onClick={(e) => setCursorPosition(e.target.selectionStart)} // Cập nhật vị trí con trỏ khi click
+          onClick={(e) => setCursorPosition(e.target.selectionStart)} 
         />
 
         <button type="submit" className="btn btn-primary btn-circle btn-sm md:btn-md mb-1" disabled={isSendingMessage || (!message.trim() && !fileAttachment)}>
