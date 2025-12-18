@@ -146,7 +146,7 @@ const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [] }
           </div>
 
           {/* Bong bóng chat */}
-          <div className={`chat-bubble flex flex-col ${bubbleColor}`}>
+          <div className={`chat-bubble flex flex-col ${bubbleColor} w-fit max-w-xs md:max-w-sm lg:max-w-md`}>
             {/* Hiển thị ảnh nếu có */}
             {file && (
               <div className="mb-2">
@@ -187,7 +187,7 @@ const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [] }
 
             {/* Hiển thị text */}
             {text && (
-              <p className="whitespace-pre-wrap break-words text-left min-w-0">
+              <p className="whitespace-pre-wrap break-words text-left min-w-0 inline">
                 {text}
               </p>
             )}
