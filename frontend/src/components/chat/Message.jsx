@@ -1,45 +1,45 @@
+import { useState } from 'react'
 import { useAuthStore } from '../../store/authStore'
 import { useChatStore } from '../../store/chatStore'
 import { isImageFile, getFileName } from '../../lib/utils'
-import { Loader2, FileText, Download } from 'lucide-react'
+import { Loader2, FileText, Download, Smile } from 'lucide-react'
 import axiosInstance from '../../lib/axios'
+import ImageLightbox from './ImageLightbox'
 
-const Message = ({ fromMe, text, file, time, isTemp }) => {
+// Danh sách emoji reactions
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡']
+// eslint-disable-next-line no-unused-vars
+const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [] }) => {
+  const [showLightbox, setShowLightbox] = useState(false)
+  const [showReactionPicker, setShowReactionPicker] = useState(false)
+  const [localReactions, setLocalReactions] = useState(reactions)
+
   const alignment = fromMe ? 'chat-end' : 'chat-start'
   const bubbleColor = fromMe ? 'chat-bubble-primary' : 'chat-bubble-secondary'
 
-  // Lấy thông tin user để hiển thị avatar chính xác
   const { user } = useAuthStore()
   const { selectedUser } = useChatStore()
   const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000'
 
-  // Xác định avatar cần hiển thị (Của mình hay của bạn chat)
   const targetUser = fromMe ? user : selectedUser
 
-  // Logic hiển thị Avatar: Có ảnh -> Link Server, Không có -> Ảnh mặc định
   const profilePic = targetUser?.profilepic
     ? `${serverUrl}${targetUser.profilepic}`
-    : `https://placehold.co/600x600/E5E7EB/333333?text=${targetUser.fullname.charAt(
-        0
-      )}`
+    : `https://placehold.co/600x600/E5E7EB/333333?text=${targetUser?.fullname?.charAt(0) || '?'}`
 
-  // LOGIC MỚI: Extract tên file gốc (originName) bằng split và slice
   const fileName = getFileName(file)
   const isImage = isImageFile(file)
   const fileUrl = `${serverUrl}${file}`
 
   const handleDownload = async (e) => {
-    // Ngăn chặn các hành vi mặc định và ngăn chặn sự kiện nổi bọt
     e.preventDefault()
     e.stopPropagation()
 
     try {
-      // 1. Dùng axios để fetch file dưới dạng binary data (blob)
       const response = await axiosInstance.get(fileUrl, {
-        responseType: 'blob', // Yêu cầu trả về dữ liệu dưới dạng Blob để tải ảnh về client
+        responseType: 'blob',
       })
 
-      // 2. Tạo Blob, URL tạm thời và thẻ <a> ẩn để kích hoạt tải xuống
       const blob = new Blob([response.data])
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
@@ -47,92 +47,197 @@ const Message = ({ fromMe, text, file, time, isTemp }) => {
       link.href = url
       link.download = fileName
       document.body.appendChild(link)
-      link.click() // Kích hoạt download
+      link.click()
 
-      // 3. Dọn dẹp
       link.remove()
-      document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Lỗi khi tải file:', error)
-      // Có thể thêm toast.error('Không thể tải file');
     }
   }
 
-  return (
-    <div className={`chat ${alignment}`}>
-      {/* Avatar */}
-      {!fromMe && (
-        <div className="chat-image avatar">
-          <div className="w-10 rounded-full border">
-            <img alt="User avatar" src={profilePic} />
-          </div>
-        </div>
-      )}
+  // Xử lý thả reaction (tạm thời local, sau này sẽ gọi API)
+  const handleReaction = (emoji) => {
+    // Kiểm tra xem user đã react emoji này chưa
+    const existingReaction = localReactions.find(
+      r => r.emoji === emoji && r.userId === user?.userid
+    )
 
-      {/* Bong bóng chat */}
-      <div className={`chat-bubble flex flex-col ${bubbleColor}`}>
-        {/* Hiển thị ảnh nếu có */}
-        {file && (
-          <div className="mb-2">
-            {isImage ? (
-              <img
-                src={fileUrl} // Nếu là base64 (preview) hoặc url (server) đều chạy tốt
-                alt="Attached"
-                className="max-w-xs rounded-lg border border-black/10"
-              />
-            ) : (
-              // File không phải ảnh: .txt, pdf, zip, ...
-              <div className="flex items-center justify-between gap-2 p-2 bg-base-100 rounded-lg border border-base-300 transition-colors">
-                <a
-                  href={fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer" // Security
-                  download={fileName} // Thêm thuộc tính này để trình duyệt tải file
-                  className="flex items-center gap-2 p-2 bg-base-100 rounded-lg text-primary hover:bg-base-200 transition-colors"
-                  title={`Tải xuống ${fileName}`}
-                >
-                  <FileText
-                    size={20}
-                    className="shrink-0 text-base-content/80"
+    if (existingReaction) {
+      // Nếu đã react, bỏ reaction
+      setLocalReactions(prev => 
+        prev.filter(r => !(r.emoji === emoji && r.userId === user?.userid))
+      )
+    } else {
+      // Nếu chưa, thêm reaction mới
+      setLocalReactions(prev => [
+        ...prev,
+        { emoji, userId: user?.userid, userName: user?.fullname }
+      ])
+    }
+    
+    setShowReactionPicker(false)
+
+    // TODO: Gọi API để lưu reaction
+    // await axiosInstance.post(`/message/${messageId}/reaction`, { emoji })
+  }
+
+  // Nhóm reactions theo emoji
+  const groupedReactions = localReactions.reduce((acc, reaction) => {
+    if (!acc[reaction.emoji]) {
+      acc[reaction.emoji] = []
+    }
+    acc[reaction.emoji].push(reaction)
+    return acc
+  }, {})
+
+  return (
+    <>
+      <div className={`chat ${alignment} group`}>
+        {/* Avatar */}
+        {!fromMe && (
+          <div className="chat-image avatar">
+            <div className="w-10 rounded-full border">
+              <img alt="User avatar" src={profilePic} />
+            </div>
+          </div>
+        )}
+
+        {/* Container cho bubble + reactions */}
+        <div className="relative">
+          {/* Reaction picker button - hiện khi hover */}
+          <div 
+            className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10
+              ${fromMe ? 'left-0 -translate-x-full pr-1' : 'right-0 translate-x-full pl-1'}`}
+          >
+            <div className="relative">
+              <button
+                onClick={() => setShowReactionPicker(!showReactionPicker)}
+                className="btn btn-ghost btn-circle btn-xs bg-base-200 hover:bg-base-300"
+                title="Thả cảm xúc"
+              >
+                <Smile size={14} />
+              </button>
+
+              {/* Reaction picker popup */}
+              {showReactionPicker && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowReactionPicker(false)}
                   />
-                  <span className="truncate max-w-[150px] font-medium text-sm text-base-content/80">
-                    {fileName}
-                  </span>
-                </a>
-                {/* Nút/Icon Tải xuống - THAY THẺ <a> BẰNG <button> */}
-                <button
-                  type="button" // Sử dụng type="button" để tránh submit form
-                  onClick={handleDownload} // Gắn hàm download vào sự kiện click
-                  className="btn btn-ghost btn-xs btn-circle text-primary hover:bg-base-200 shrink-0"
-                  title={`Tải xuống ${fileName}`}
-                >
-                  <Download size={18} />
-                </button>
+                  <div 
+                    className={`absolute z-50 bg-base-100 shadow-lg rounded-full px-2 py-1 flex gap-1 border border-base-300
+                      ${fromMe ? 'right-full mr-1' : 'left-full ml-1'} top-1/2 -translate-y-1/2`}
+                  >
+                    {REACTION_EMOJIS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleReaction(emoji)}
+                        className="w-7 h-7 flex items-center justify-center text-lg hover:scale-125 transition-transform"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Bong bóng chat */}
+          <div className={`chat-bubble flex flex-col ${bubbleColor}`}>
+            {/* Hiển thị ảnh nếu có */}
+            {file && (
+              <div className="mb-2">
+                {isImage ? (
+                  <img
+                    src={fileUrl}
+                    alt="Attached"
+                    className="max-w-xs rounded-lg border border-black/10 cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => setShowLightbox(true)}
+                  />
+                ) : (
+                  <div className="flex items-center justify-between gap-2 p-2 bg-base-100 rounded-lg border border-base-300 transition-colors">
+                    <a
+                      href={fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download={fileName}
+                      className="flex items-center gap-2 p-2 bg-base-100 rounded-lg text-primary hover:bg-base-200 transition-colors"
+                      title={`Tải xuống ${fileName}`}
+                    >
+                      <FileText size={20} className="shrink-0 text-base-content/80" />
+                      <span className="truncate max-w-[150px] font-medium text-sm text-base-content/80">
+                        {fileName}
+                      </span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleDownload}
+                      className="btn btn-ghost btn-xs btn-circle text-primary hover:bg-base-200 shrink-0"
+                      title={`Tải xuống ${fileName}`}
+                    >
+                      <Download size={18} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Hiển thị text */}
+            {text && (
+              <p className="whitespace-pre-wrap break-words text-left min-w-0">
+                {text}
+              </p>
+            )}
+
+            {/* Loading indicator */}
+            {isTemp && (
+              <div className="flex items-center gap-2 mt-1 text-xs opacity-70">
+                <Loader2 size={12} className="animate-spin" />
+                Đang gửi...
               </div>
             )}
           </div>
-        )}
 
-        {/* Hiển thị text - SỬA ĐỔI QUAN TRỌNG: whitespace-pre-wrap */}
-        {text && (
-          <p className="whitespace-pre-wrap wrap-break-words text-left min-w-0">
-            {text}
-          </p>
-        )}
+          {/* Hiển thị reactions */}
+          {Object.keys(groupedReactions).length > 0 && (
+            <div 
+              className={`flex flex-wrap gap-1 mt-1 ${fromMe ? 'justify-end' : 'justify-start'}`}
+            >
+              {Object.entries(groupedReactions).map(([emoji, users]) => (
+                <button
+                  key={emoji}
+                  onClick={() => handleReaction(emoji)}
+                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs border transition-colors
+                    ${users.some(u => u.userId === user?.userid) 
+                      ? 'bg-primary/20 border-primary' 
+                      : 'bg-base-200 border-base-300 hover:bg-base-300'
+                    }`}
+                  title={users.map(u => u.userName).join(', ')}
+                >
+                  <span>{emoji}</span>
+                  <span className="text-base-content/70">{users.length}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
-        {/* Loading indicator */}
-        {isTemp && (
-          <div className="flex items-center gap-2 mt-1 text-xs opacity-70">
-            <Loader2 size={12} className="animate-spin" />
-            Đang gửi...
-          </div>
-        )}
+        {/* Thời gian */}
+        <div className="chat-footer opacity-50 text-xs mt-1">{time}</div>
       </div>
 
-      {/* Thời gian */}
-      <div className="chat-footer opacity-50 text-xs mt-1">{time}</div>
-    </div>
+      {/* Lightbox */}
+      {showLightbox && isImage && (
+        <ImageLightbox
+          src={fileUrl}
+          alt={fileName}
+          onClose={() => setShowLightbox(false)}
+        />
+      )}
+    </>
   )
 }
 
