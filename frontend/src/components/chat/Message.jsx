@@ -2,14 +2,51 @@ import { useState } from 'react'
 import { useAuthStore } from '../../store/authStore'
 import { useChatStore } from '../../store/chatStore'
 import { isImageFile, getFileName } from '../../lib/utils'
-import { Loader2, FileText, Download, Smile } from 'lucide-react'
+import { Loader2, FileText, Download, Smile, Check, CheckCheck } from 'lucide-react'
 import axiosInstance from '../../lib/axios'
 import ImageLightbox from './ImageLightbox'
 
 // Danh sách emoji reactions
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡']
+
+// Component hiển thị trạng thái tin nhắn
+const MessageStatus = ({ status, fromMe }) => {
+  // Chỉ hiển thị trạng thái cho tin nhắn của mình
+  if (!fromMe) return null
+
+  const statusConfig = {
+    sending: {
+      icon: <Loader2 size={14} className="animate-spin" />,
+      color: 'text-base-content/50',
+      title: 'Đang gửi...'
+    },
+    sent: {
+      icon: <Check size={14} />,
+      color: 'text-base-content/50',
+      title: 'Đã gửi'
+    },
+    delivered: {
+      icon: <CheckCheck size={14} />,
+      color: 'text-base-content/50',
+      title: 'Đã nhận'
+    },
+    seen: {
+      icon: <CheckCheck size={14} />,
+      color: 'text-info',
+      title: 'Đã xem'
+    }
+  }
+
+  const config = statusConfig[status] || statusConfig.sent
+
+  return (
+    <span className={`inline-flex items-center ${config.color}`} title={config.title}>
+      {config.icon}
+    </span>
+  )
+}
 // eslint-disable-next-line no-unused-vars
-const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [] }) => {
+const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [],status = 'sent' }) => {
   const [showLightbox, setShowLightbox] = useState(false)
   const [showReactionPicker, setShowReactionPicker] = useState(false)
   const [localReactions, setLocalReactions] = useState(reactions)
@@ -56,20 +93,17 @@ const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [] }
     }
   }
 
-  // Xử lý thả reaction (tạm thời local, sau này sẽ gọi API)
+  // Xử lý thả reaction
   const handleReaction = (emoji) => {
-    // Kiểm tra xem user đã react emoji này chưa
     const existingReaction = localReactions.find(
       r => r.emoji === emoji && r.userId === user?.userid
     )
 
     if (existingReaction) {
-      // Nếu đã react, bỏ reaction
       setLocalReactions(prev => 
         prev.filter(r => !(r.emoji === emoji && r.userId === user?.userid))
       )
     } else {
-      // Nếu chưa, thêm reaction mới
       setLocalReactions(prev => [
         ...prev,
         { emoji, userId: user?.userid, userName: user?.fullname }
@@ -90,6 +124,9 @@ const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [] }
     acc[reaction.emoji].push(reaction)
     return acc
   }, {})
+
+  // Xác định trạng thái hiển thị
+  const displayStatus = isTemp ? 'sending' : status
 
   return (
     <>
@@ -191,14 +228,6 @@ const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [] }
                 {text}
               </p>
             )}
-
-            {/* Loading indicator */}
-            {isTemp && (
-              <div className="flex items-center gap-2 mt-1 text-xs opacity-70">
-                <Loader2 size={12} className="animate-spin" />
-                Đang gửi...
-              </div>
-            )}
           </div>
 
           {/* Hiển thị reactions */}
@@ -225,8 +254,11 @@ const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [] }
           )}
         </div>
 
-        {/* Thời gian */}
-        <div className="chat-footer opacity-50 text-xs mt-1">{time}</div>
+        {/* Thời gian + Trạng thái */}
+        <div className="chat-footer opacity-50 text-xs mt-1 flex items-center gap-1">
+          <span>{time}</span>
+          <MessageStatus status={displayStatus} fromMe={fromMe} />
+        </div>
       </div>
 
       {/* Lightbox */}

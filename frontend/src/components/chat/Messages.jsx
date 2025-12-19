@@ -47,11 +47,28 @@ const formatTime = (dateString, isTemp) => {
     })
 }
 
+// Hàm xác định trạng thái tin nhắn
+// eslint-disable-next-line no-unused-vars
+const getMessageStatus = (message, isLastMessage, selectedUser) => {
+    // Nếu đang gửi
+    if (message.isTemp) return 'sending'
+    
+    // Nếu đã được xem (cần backend hỗ trợ field 'seen' hoặc 'seenAt')
+    if (message.seen || message.seenAt) return 'seen'
+    
+    // Nếu đã nhận (cần backend hỗ trợ field 'delivered' hoặc 'deliveredAt')
+    if (message.delivered || message.deliveredAt) return 'delivered'
+    
+    // Mặc định là đã gửi
+    return 'sent'
+}
+
 const Messages = ({ messages }) => {
   const { user } = useAuthStore()
   const { groupMembers, selectedUser } = useChatStore()
   const lastMessageRef = useRef()
-// eslint-disable-next-line no-unused-vars
+
+  // eslint-disable-next-line no-unused-vars
   const highlightRegex = useMemo(() => {
     if (selectedUser?.groupid === undefined || !groupMembers.length) return null;
     const names = groupMembers.flatMap(m => [m.nickname, m.fullname]).filter(Boolean).map(name => name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).sort((a, b) => b.length - a.length);
@@ -69,6 +86,8 @@ const Messages = ({ messages }) => {
     <div className="flex flex-col gap-2 pb-2">
       {messages.map((message, index) => {
         const isNewDay = index === 0 || !isSameDay(message.created, messages[index - 1].created);
+        const isLastMessage = index === messages.length - 1;
+        const isFromMe = message.senderid === user?.userid;
 
         return (
           <div key={message.messageid || message.tempId || index} ref={index === messages.length - 1 ? lastMessageRef : null}>
@@ -81,12 +100,13 @@ const Messages = ({ messages }) => {
             )}
             <Message 
               messageId={message.messageid}
-              fromMe={message.senderid === user?.userid} 
+              fromMe={isFromMe} 
               text={message.content}
               file={message.file}
               time={formatTime(message.created, message.isTemp)}
               isTemp={message.isTemp}
               reactions={message.reactions || []}
+              status={getMessageStatus(message, isLastMessage, selectedUser)}
               senderName={message.nickname || message.sender?.fullname || message.fullname}
               senderProfilePic={message.sender?.profilepic || message.profilepic}
             />
