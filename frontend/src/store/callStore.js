@@ -31,8 +31,7 @@ export const useCallStore = create((set, get) => ({
   iceCandidatesQueue: [], // Hàng đợi ICE khi chưa setRemoteDescription
 
   // Controls
-  isCameraOn: true,
-  isMicrophoneOn: true,
+  remoteStatus: { isCameraOn: true, isMicrophoneOn: true },
 
   // =========================================================
   // WEBRTC & MEDIA STREAM FUNCTIONS
@@ -45,7 +44,7 @@ export const useCallStore = create((set, get) => ({
         video: true,
         audio: true, // Đảm bảo audio bật
       })
-      set({ localStream: stream, isCameraOn: true, isMicrophoneOn: true })
+      set({ localStream: stream })
       return stream
     } catch (error) {
       toast.error('Không thể truy cập Camera/Micro.')
@@ -259,6 +258,29 @@ export const useCallStore = create((set, get) => ({
     if (!isRemote) toast.success('Cuộc gọi đã kết thúc.')
   },
 
+  // Hàm đồng bộ trạng thái Media
+  toggleMedia: (type, enabled) => {
+    const { callState, localStream } = get()
+    const socket = useAuthStore.getState().socket
+
+    if (localStream) {
+      const track =
+        type === 'video'
+          ? localStream.getVideoTracks()[0]
+          : localStream.getAudioTracks()[0]
+      if (track) track.enabled = enabled
+
+      // Gửi tín hiệu cho đối phương
+      socket.emit('webrtc-signal', {
+        type: 'media-status',
+        targetUserId: callState.remoteUser.userid,
+        callId: callState.callId,
+        mediaType: type,
+        enabled: enabled,
+      })
+    }
+  },
+
   // =========================================================
   // III. SOCKET EVENT LISTENERS
   // =========================================================
@@ -270,6 +292,16 @@ export const useCallStore = create((set, get) => ({
     socket.on('webrtc-signal', async (data) => {
       const { peerConnection, callState } = get()
       if (data.callId !== callState.callId) return
+
+      if (data.type === 'media-status') {
+        set((state) => ({
+          remoteStatus: {
+            ...state.remoteStatus,
+            [data.mediaType === 'video' ? 'isCameraOn' : 'isMicrophoneOn']:
+              data.enabled,
+          },
+        }))
+      }
 
       if (data.type === 'call-answer') {
         // Người gọi nhận Answer và thiết lập kết nối
