@@ -1,4 +1,4 @@
-CREATE DATABASE WEB;
+﻿CREATE DATABASE WEB;
 GO
 
 USE WEB;
@@ -7,6 +7,7 @@ GO
 
 DROP TABLE IF EXISTS dbo.Notifications;
 DROP TABLE IF EXISTS dbo.GroupMembers;
+DROP TABLE IF EXISTS dbo.Reactions;
 DROP TABLE IF EXISTS dbo.Messages;
 DROP TABLE IF EXISTS dbo.Groups;
 DROP TABLE IF EXISTS dbo.Users;
@@ -47,22 +48,65 @@ CREATE UNIQUE INDEX UQ_Group_User ON dbo.GroupMembers(group_id, user_id);
 
 CREATE TABLE dbo.Messages (
   messageid INT IDENTITY(1,1) PRIMARY KEY,
+
   senderid INT NOT NULL,
   receiverid INT NULL,
-  group_id INT NULL,   
-  content NVARCHAR(MAX), 
-  [file] NVARCHAR(MAX) NULL DEFAULT (''),
-  created DATETIME DEFAULT GETDATE(),
-  
-  FOREIGN KEY (senderid) REFERENCES dbo.Users(userid),
-  FOREIGN KEY (receiverid) REFERENCES dbo.Users(userid),
-  FOREIGN KEY (group_id) REFERENCES dbo.Groups(groupid) ON DELETE CASCADE,
+  group_id INT NULL,
 
+  content NVARCHAR(MAX) NULL,
+  [file] NVARCHAR(MAX) NULL DEFAULT (''),
+
+  replyToId INT NULL,
+  isForwarded BIT NOT NULL DEFAULT (0),
+
+  seen BIT NOT NULL DEFAULT (0),
+  seenAt DATETIME NULL,
+
+  created DATETIME NOT NULL DEFAULT GETDATE(),
+
+  -- FK users / groups
+  CONSTRAINT FK_Messages_Sender
+    FOREIGN KEY (senderid) REFERENCES dbo.Users(userid),
+
+  CONSTRAINT FK_Messages_Receiver
+    FOREIGN KEY (receiverid) REFERENCES dbo.Users(userid),
+
+  CONSTRAINT FK_Messages_Group
+    FOREIGN KEY (group_id) REFERENCES dbo.Groups(groupid)
+    ON DELETE CASCADE,
+
+  -- reply self-reference
+  CONSTRAINT FK_Messages_ReplyTo
+    FOREIGN KEY (replyToId) REFERENCES dbo.Messages(messageid),
+
+  -- private chat XOR group chat
   CONSTRAINT CHK_Message_Type CHECK (
-    (receiverid IS NOT NULL AND group_id IS NULL) OR 
+    (receiverid IS NOT NULL AND group_id IS NULL)
+    OR
     (receiverid IS NULL AND group_id IS NOT NULL)
   )
 );
+
+CREATE TABLE dbo.Reactions (
+  reactionid INT IDENTITY(1,1) PRIMARY KEY,
+
+  messageid INT NOT NULL,
+  userid INT NOT NULL,
+  emoji NVARCHAR(10) NOT NULL,
+
+  created DATETIME NOT NULL DEFAULT GETDATE(),
+
+  -- FK
+  CONSTRAINT FK_Reactions_Message
+    FOREIGN KEY (messageid)
+    REFERENCES dbo.Messages(messageid)
+    ON DELETE CASCADE,
+
+  CONSTRAINT FK_Reactions_User
+    FOREIGN KEY (userid)
+    REFERENCES dbo.Users(userid),
+);
+
 
 CREATE TABLE dbo.Notifications (
   notif_id INT IDENTITY(1,1) PRIMARY KEY,
@@ -90,3 +134,10 @@ BEGIN
   FROM Users u
   INNER JOIN inserted i ON u.userid = i.userid;
 END;
+
+SELECT * FROM dbo.Notifications;
+SELECT * FROM dbo.GroupMembers;
+SELECT * FROM dbo.Messages;
+SELECT * FROM dbo.Reactions
+SELECT * FROM dbo.Groups;
+SELECT * FROM dbo.Users;
