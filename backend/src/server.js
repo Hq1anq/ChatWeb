@@ -43,6 +43,8 @@ app.use(
   cors({
     origin: process.env.CLIENT_URL,
     credentials: true, // Cho phép gửi cookie
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   })
 )
 
