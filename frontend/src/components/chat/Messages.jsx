@@ -1,7 +1,9 @@
-import { useRef, useEffect, useMemo } from 'react'
+import { useRef, useEffect, useMemo, useState } from 'react'
 import { useAuthStore } from '../../store/authStore'
 import { useChatStore } from '../../store/chatStore'
+import { Pin, X } from 'lucide-react'
 import Message from './Message'
+//import ForwardModal from './ForwardModal'
 
 const isSameDay = (d1, d2) => {
     if (!d2) return false;
@@ -49,24 +51,27 @@ const formatTime = (dateString, isTemp) => {
 
 // Hàm xác định trạng thái tin nhắn
 // eslint-disable-next-line no-unused-vars
-const getMessageStatus = (message, isLastMessage, selectedUser) => {
+const getMessageStatus = (message, isLastFromMe, allMessages, user) => {
     // Nếu đang gửi
     if (message.isTemp) return 'sending'
     
-    // Nếu đã được xem (cần backend hỗ trợ field 'seen' hoặc 'seenAt')
+    // Nếu đã được xem
     if (message.seen || message.seenAt) return 'seen'
     
-    // Nếu đã nhận (cần backend hỗ trợ field 'delivered' hoặc 'deliveredAt')
+    // Nếu đã nhận (người nhận online và nhận được tin nhắn)
     if (message.delivered || message.deliveredAt) return 'delivered'
     
     // Mặc định là đã gửi
     return 'sent'
 }
 
-const Messages = ({ messages }) => {
+const Messages = ({ messages, onReply }) => {
   const { user } = useAuthStore()
-  const { groupMembers, selectedUser } = useChatStore()
+  const { groupMembers, selectedUser, markMessagesAsSeen } = useChatStore()
   const lastMessageRef = useRef()
+   // eslint-disable-next-line no-unused-vars
+  const [forwardingMessage, setForwardingMessage] = useState(null)
+  const [pinnedMessageIds, setPinnedMessageIds] = useState([])
 
   // eslint-disable-next-line no-unused-vars
   const highlightRegex = useMemo(() => {
@@ -82,12 +87,108 @@ const Messages = ({ messages }) => {
     }, 100) 
   }, [messages])
 
+  // Đánh dấu đã xem khi component mount hoặc messages thay đổi
+  useEffect(() => {
+    if (selectedUser && messages.length > 0) {
+      const isGroup = selectedUser.groupid !== undefined
+      const conversationId = isGroup ? selectedUser.groupid : selectedUser.userid
+      
+      // Kiểm tra xem có tin nhắn chưa xem từ người khác không
+      const hasUnseenMessages = messages.some(
+        msg => msg.senderid !== user?.userid && !msg.seen
+      )
+      
+      if (hasUnseenMessages) {
+        markMessagesAsSeen(conversationId, isGroup)
+      }
+    }
+  }, [selectedUser, messages, user, markMessagesAsSeen])
+
+  const pinnedMessages = messages.filter(msg => 
+    pinnedMessageIds.includes(msg.messageid) || msg.isPinned
+  )
+
+  const handlePin = (messageId, shouldPin) => {
+    if (shouldPin) {
+      setPinnedMessageIds(prev => [...prev, messageId])
+    } else {
+      setPinnedMessageIds(prev => prev.filter(id => id !== messageId))
+    }
+  }
+
+  const handleForward = (message) => {
+    setForwardingMessage(message)
+  }
+
+  const handleReply = (replyData) => {
+    if (onReply) {
+      onReply(replyData)
+    }
+  }
+
+  const findReplyToMessage = (replyToId) => {
+    if (!replyToId) return null
+    const originalMsg = messages.find(m => m.messageid === replyToId)
+    if (!originalMsg) return null
+    
+    return {
+      messageId: originalMsg.messageid,
+      content: originalMsg.content,
+      file: originalMsg.file,
+      senderName: originalMsg.senderid === user?.userid 
+        ? 'Bạn' 
+        : (originalMsg.sender?.fullname || selectedUser?.fullname || 'Người dùng'),
+      senderId: originalMsg.senderid
+    }
+  }
+
+  // Tìm tin nhắn cuối cùng của mình đã được xem
+  // eslint-disable-next-line no-unused-vars
+  const lastSeenMessageId = useMemo(() => {
+    const myMessages = messages.filter(m => m.senderid === user?.userid && m.seen)
+    return myMessages.length > 0 ? myMessages[myMessages.length - 1].messageid : null
+  }, [messages, user])
+
   return (
     <div className="flex flex-col gap-2 pb-2">
+      {/* Pinned Messages Bar */}
+      {pinnedMessages.length > 0 && (
+        <div className="sticky top-0 z-20 bg-warning/10 border border-warning/30 rounded-lg p-2 mb-2">
+          <div className="flex items-center gap-2 text-warning text-sm font-medium mb-1">
+            <Pin size={14} />
+            <span>Tin nhắn đã ghim ({pinnedMessages.length})</span>
+          </div>
+          <div className="space-y-1">
+            {pinnedMessages.slice(0, 3).map(msg => (
+              <div 
+                key={msg.messageid} 
+                className="flex items-center justify-between bg-base-100 rounded p-2 text-xs"
+              >
+                <p className="truncate flex-1">
+                  {msg.content || (msg.file ? '📎 File đính kèm' : '')}
+                </p>
+                <button
+                  onClick={() => handlePin(msg.messageid, false)}
+                  className="btn btn-ghost btn-circle btn-xs"
+                  title="Bỏ ghim"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Messages List */}
       {messages.map((message, index) => {
         const isNewDay = index === 0 || !isSameDay(message.created, messages[index - 1].created);
-        const isLastMessage = index === messages.length - 1;
         const isFromMe = message.senderid === user?.userid;
+        const isPinned = pinnedMessageIds.includes(message.messageid) || message.isPinned;
+        
+        // Kiểm tra xem đây có phải tin nhắn cuối của mình không
+        const isLastFromMe = isFromMe && 
+          !messages.slice(index + 1).some(m => m.senderid === user?.userid);
 
         return (
           <div key={message.messageid || message.tempId || index} ref={index === messages.length - 1 ? lastMessageRef : null}>
@@ -106,14 +207,26 @@ const Messages = ({ messages }) => {
               time={formatTime(message.created, message.isTemp)}
               isTemp={message.isTemp}
               reactions={message.reactions || []}
-              status={getMessageStatus(message, isLastMessage, selectedUser)}
+              status={getMessageStatus(message, isLastFromMe, messages, user)}
+              isPinned={isPinned}
+              replyTo={findReplyToMessage(message.replyToId)}
               senderName={message.nickname || message.sender?.fullname || message.fullname}
-              senderProfilePic={message.sender?.profilepic || message.profilepic}
-              highlightRegex={highlightRegex}
+              message={message}
+              onReply={handleReply}
+              onPin={handlePin}
+              onForward={handleForward}
             />
           </div>
         );
       })}
+
+      {/* Forward Modal */}
+      {/*forwardingMessage && (
+        <ForwardModal
+          message={forwardingMessage}
+          onClose={() => setForwardingMessage(null)}
+        />
+      )*/}
     </div>
   )
 }

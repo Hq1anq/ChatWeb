@@ -22,7 +22,6 @@ export const useChatStore = create((set, get) => ({
   openSidebar: () => set({ isSidebarOpen: true }),
 
   setSelectedUser: (userOrGroup) => {
-    // 1. Reset groupMembers về rỗng ngay lập tức để tránh hiện data của nhóm cũ
     set({ selectedUser: userOrGroup, groupMembers: [] }); 
 
     if (userOrGroup) {
@@ -31,11 +30,49 @@ export const useChatStore = create((set, get) => ({
       
       get().getMessages(id, isGroup)
 
-      // Nếu là Mobile thì đóng sidebar
+      // Đánh dấu tin nhắn đã xem khi mở cuộc trò chuyện
+      get().markMessagesAsSeen(id, isGroup)
+
       if (typeof window !== 'undefined' && window.innerWidth < 768) {
         set({ isSidebarOpen: false })
       }
     }
+  },
+
+  // Đánh dấu tin nhắn đã xem
+  markMessagesAsSeen: (conversationUserId, isGroup = false) => {
+    const socket = useAuthStore.getState().socket
+    if (!socket || !conversationUserId) return
+
+    // Emit socket event để đánh dấu đã xem
+    socket.emit('markAsSeen', {
+      conversationUserId,
+      isGroup
+    })
+  },
+
+  // Cập nhật trạng thái seen cho messages
+  updateMessagesSeen: (data) => {
+    // eslint-disable-next-line no-unused-vars
+    const { viewerId, senderId, messageIds, isGroup, seenAt } = data
+    const currentUser = useAuthStore.getState().user
+
+    // Chỉ cập nhật nếu mình là người gửi
+    if (currentUser?.userid === senderId) return
+
+    set((state) => ({
+      messages: state.messages.map((msg) => {
+        // Nếu có danh sách messageIds cụ thể
+        if (messageIds && messageIds.includes(msg.messageid)) {
+          return { ...msg, seen: true, seenAt }
+        }
+        // Nếu không có danh sách, cập nhật tất cả tin nhắn của mình gửi cho người đó
+        if (!messageIds && msg.senderid === currentUser?.userid && !msg.seen) {
+          return { ...msg, seen: true, seenAt }
+        }
+        return msg
+      })
+    }))
   },
 
   getUsers: async () => {
@@ -101,9 +138,7 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  // === FIXED SENDMESSAGE FUNCTION ===
-  sendMessage: async (message, fileAttachment) => {
-    // FIX: Access groupMembers via get()
+  sendMessage: async (message, fileAttachment, replyToId = null) => {
     const { selectedUser, messages, groupMembers } = get() 
     
     if (!selectedUser) return
@@ -120,12 +155,13 @@ export const useChatStore = create((set, get) => ({
       file: fileAttachment ? fileAttachment.file.name : null,
       created: new Date().toISOString(),
       isTemp: true,
+      seen: false,
+      replyToId,
       sender: useAuthStore.getState().user 
     }
 
     set({ messages: [...messages, tempMessage], isSendingMessage: true })
 
-    // FIX: Check if message is a string before matching
     const mentionMatches = (typeof message === 'string') ? message.match(/@([\p{L}\p{N}_ ]+)/gu) : null;
     let mentionedIds = [];
     
@@ -141,10 +177,10 @@ export const useChatStore = create((set, get) => ({
       const formData = new FormData()
       if (message.trim()) formData.append('content', message)
       if (fileAttachment) formData.append('file', fileAttachment.file)
+      if (replyToId) formData.append('replyToId', replyToId)
       
       formData.append('isGroup', isGroup)
 
-      // Add mentions to formData
       if (mentionedIds.length > 0) {
           formData.append('mentions', JSON.stringify(mentionedIds));
       }
@@ -160,7 +196,7 @@ export const useChatStore = create((set, get) => ({
       set((state) => ({
         messages: state.messages
           .filter((msg) => msg.messageid !== tempMessage.messageid)
-          .concat(response.data),
+          .concat({ ...response.data, seen: false }),
       }))
 
       return { success: true }
@@ -206,7 +242,7 @@ export const useChatStore = create((set, get) => ({
   },
 
   onMessage: () => {
-    const { selectedUser, updateSidebarList } = get()
+    const { selectedUser, updateSidebarList, markMessagesAsSeen, updateMessagesSeen } = get()
     const socket = useAuthStore.getState().socket
     if(!socket) return;
 
@@ -221,7 +257,19 @@ export const useChatStore = create((set, get) => ({
 
       if (isBelongToCurrentChat) {
         set({ messages: [...get().messages, newMessage] })
+        
+        // Nếu đang xem cuộc trò chuyện này, đánh dấu đã xem
+        const currentUser = useAuthStore.getState().user
+        if (newMessage.senderid !== currentUser?.userid) {
+          const conversationId = isGroupMsg ? newMessage.group_id : newMessage.senderid
+          markMessagesAsSeen(conversationId, isGroupMsg)
+        }
       }
+    });
+
+    // Lắng nghe event messagesSeen
+    socket.on('messagesSeen', (data) => {
+      updateMessagesSeen(data)
     });
 
     socket.on('new-group', (newGroup) => {
@@ -242,6 +290,7 @@ export const useChatStore = create((set, get) => ({
               )
           }));
           toast.success("Đổi biệt danh thành công");
+      // eslint-disable-next-line no-unused-vars
       } catch (error) {
           toast.error("Lỗi đổi biệt danh");
       }
@@ -249,7 +298,10 @@ export const useChatStore = create((set, get) => ({
 
   offMessage: () => {
     const socket = useAuthStore.getState().socket
-    if(socket) socket.off('newMessage')
+    if(socket) {
+      socket.off('newMessage')
+      socket.off('messagesSeen')
+    }
   },
 
   unsubscribeFromMessages: () => {
@@ -257,6 +309,7 @@ export const useChatStore = create((set, get) => ({
     if(socket) {
         socket.off('newMessage');
         socket.off('new-group');
+        socket.off('messagesSeen');
     }
   },
   
