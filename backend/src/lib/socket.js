@@ -1,22 +1,20 @@
 import { Server } from 'socket.io'
 import { getConnection } from './db.js'
+import sql from 'mssql'
 
-let io // Khai báo biến io global
-let app // Khai báo biến app global
+let io
+let app
 
-// Hàm này sẽ được gọi từ server.js để khởi tạo Socket.io với server HTTPS
 export const initializeSocketIO = (httpsServer, expressApp) => {
-  app = expressApp // Lưu lại app instance
+  app = expressApp
 
   io = new Server(httpsServer, {
     cors: {
-      // THAY ĐỔI URL CLIENT SANG HTTPS
-      origin: [process.env.CLIENT_URL],
+      origin: [process.env.CLIENT_URL, 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
       credentials: true,
     },
   })
 
-  // Bắt đầu lắng nghe kết nối Socket.io
   io.on('connection', async (socket) => {
     console.log('A user connected:', socket.id)
 
@@ -24,7 +22,7 @@ export const initializeSocketIO = (httpsServer, expressApp) => {
     if (userId) {
       userSocketMap[userId] = socket.id
 
-      // 1. Join các nhóm đã có (Giữ nguyên logic)
+      // Join các nhóm đã có
       try {
         const pool = await getConnection()
         const groups = await pool
@@ -40,11 +38,83 @@ export const initializeSocketIO = (httpsServer, expressApp) => {
       }
     }
 
-    // === Lắng nghe sự kiện Client xin join nhóm mới ===
+    // === Lắng nghe sự kiện join nhóm mới ===
     socket.on('join-group', (groupId) => {
       const roomName = `group_${groupId}`
       socket.join(roomName)
       console.log(`User ${userId} just joined room: ${roomName}`)
+    })
+
+    // === MARK AS SEEN - Đánh dấu tin nhắn đã xem ===
+    socket.on('markAsSeen', async (data) => {
+      const { conversationUserId, isGroup } = data
+      
+      if (!userId || !conversationUserId) return
+
+      try {
+        const pool = await getConnection()
+        const now = new Date()
+
+        if (isGroup) {
+          // Đánh dấu tin nhắn nhóm đã xem
+          await pool.request()
+            .input('groupId', sql.Int, conversationUserId)
+            .input('oderId', sql.Int, userId)
+            .input('seenAt', sql.DateTime, now)
+            .query(`
+              UPDATE Messages 
+              SET seen = 1, seenAt = @seenAt 
+              WHERE group_id = @groupId 
+                AND senderid != @oderId 
+                AND (seen = 0 OR seen IS NULL)
+            `)
+
+          // Emit cho tất cả members trong group
+          io.to(`group_${conversationUserId}`).emit('messagesSeen', {
+            oderId: parseInt(userId),
+            oderId: parseInt(conversationUserId),
+            isGroup: true,
+            seenAt: now
+          })
+
+        } else {
+          // Đánh dấu tin nhắn 1-1 đã xem
+          // Cập nhật tất cả tin nhắn từ người kia gửi cho mình
+          const result = await pool.request()
+            .input('oderId', sql.Int, userId)
+            .input('senderId', sql.Int, conversationUserId)
+            .input('seenAt', sql.DateTime, now)
+            .query(`
+              UPDATE Messages 
+              SET seen = 1, seenAt = @seenAt 
+              OUTPUT INSERTED.messageid
+              WHERE receiverid = @oderId 
+                AND senderid = @senderId 
+                AND (seen = 0 OR seen IS NULL)
+            `)
+
+          const updatedMessageIds = result.recordset.map(r => r.messageid)
+
+          if (updatedMessageIds.length > 0) {
+            // Emit cho người gửi biết tin nhắn đã được xem
+            const senderSocketId = getReceiverSocketId(conversationUserId)
+            if (senderSocketId) {
+              io.to(senderSocketId).emit('messagesSeen', {
+                oderId: parseInt(userId),
+                oderId: parseInt(conversationUserId),
+                messageIds: updatedMessageIds,
+                isGroup: false,
+                seenAt: now
+              })
+            }
+          }
+        }
+
+        console.log(`User ${userId} marked messages as seen from ${conversationUserId}`)
+
+      } catch (error) {
+        console.error('Error marking messages as seen:', error)
+      }
     })
 
     io.emit('online-users', Object.keys(userSocketMap))
@@ -53,18 +123,17 @@ export const initializeSocketIO = (httpsServer, expressApp) => {
     socket.on('call-offer', (data) => {
       const receiverSocketId = getReceiverSocketId(data.targetUserId)
       if (receiverSocketId) {
-        // Gửi thông báo có cuộc gọi đến cho người nhận
         io.to(receiverSocketId).emit('call-received', {
           sender: data.sender,
-          offer: data.offer, // SDP Offer từ WebRTC
+          offer: data.offer,
           callId: data.callId,
         })
       }
     })
+
     socket.on('webrtc-signal', (data) => {
       const receiverSocketId = getReceiverSocketId(data.targetUserId)
       if (receiverSocketId) {
-        // Trung chuyển ICE Candidates hoặc Answer SDP
         io.to(receiverSocketId).emit('webrtc-signal', data)
       }
     })
@@ -75,6 +144,7 @@ export const initializeSocketIO = (httpsServer, expressApp) => {
         io.to(receiverSocketId).emit('call-answered', { callId: data.callId })
       }
     })
+
     socket.on('call-rejected', (data) => {
       const receiverSocketId = getReceiverSocketId(data.targetUserId)
       if (receiverSocketId) {
@@ -84,6 +154,7 @@ export const initializeSocketIO = (httpsServer, expressApp) => {
         })
       }
     })
+
     socket.on('call-ended', (data) => {
       const receiverSocketId = getReceiverSocketId(data.targetUserId)
       if (receiverSocketId) {
@@ -101,7 +172,7 @@ export const initializeSocketIO = (httpsServer, expressApp) => {
   })
 }
 
-const userSocketMap = {} // {userId: socketId}
+const userSocketMap = {}
 
 export const getReceiverSocketId = (userId) => userSocketMap[userId]
 
