@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react' // 1. Thêm useMemo
 import { useAuthStore } from '../../store/authStore'
 import { useChatStore } from '../../store/chatStore'
 import { isImageFile, getFileName } from '../../lib/utils'
@@ -11,7 +11,6 @@ const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡']
 
 // Component hiển thị trạng thái tin nhắn
 const MessageStatus = ({ status, fromMe }) => {
-  // Chỉ hiển thị trạng thái cho tin nhắn của mình
   if (!fromMe) return null
 
   const statusConfig = {
@@ -45,8 +44,10 @@ const MessageStatus = ({ status, fromMe }) => {
     </span>
   )
 }
+
+// 2. Thêm highlightRegex vào props
 // eslint-disable-next-line no-unused-vars
-const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [],status = 'sent' }) => {
+const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [], status = 'sent', highlightRegex }) => {
   const [showLightbox, setShowLightbox] = useState(false)
   const [showReactionPicker, setShowReactionPicker] = useState(false)
   const [localReactions, setLocalReactions] = useState(reactions)
@@ -67,6 +68,26 @@ const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [],s
   const fileName = getFileName(file)
   const isImage = isImageFile(file)
   const fileUrl = `${serverUrl}${file}`
+
+  // 3. Logic xử lý highlight text (Mentions)
+  const renderedContent = useMemo(() => {
+    if (!highlightRegex || !text) return text;
+
+    // Split text giữ lại phần khớp nhờ capturing group trong regex
+    const parts = text.split(highlightRegex);
+
+    return parts.map((part, index) => {
+      // Kiểm tra xem phần này có khớp regex không
+      if (part.match(highlightRegex)) {
+        return (
+          <span key={index} className="font-bold text-blue-600 bg-blue-100 rounded px-1 mx-0.5 inline-block">
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  }, [text, highlightRegex]);
 
   const handleDownload = async (e) => {
     e.preventDefault()
@@ -111,9 +132,7 @@ const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [],s
     }
     
     setShowReactionPicker(false)
-
     // TODO: Gọi API để lưu reaction
-    // await axiosInstance.post(`/message/${messageId}/reaction`, { emoji })
   }
 
   // Nhóm reactions theo emoji
@@ -222,10 +241,10 @@ const Message = ({ messageId, fromMe, text, file, time, isTemp, reactions = [],s
               </div>
             )}
 
-            {/* Hiển thị text */}
+            {/* 4. Hiển thị text với renderedContent thay vì text thuần */}
             {text && (
               <p className="whitespace-pre-wrap wrap-break-word text-left min-w-0 inline">
-                {text}
+                {renderedContent}
               </p>
             )}
           </div>

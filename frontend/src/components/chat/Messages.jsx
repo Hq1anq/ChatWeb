@@ -109,6 +109,7 @@ const Messages = ({ messages }) => {
               status={getMessageStatus(message, isLastMessage, selectedUser)}
               senderName={message.nickname || message.sender?.fullname || message.fullname}
               senderProfilePic={message.sender?.profilepic || message.profilepic}
+              highlightRegex={highlightRegex}
             />
           </div>
         );
