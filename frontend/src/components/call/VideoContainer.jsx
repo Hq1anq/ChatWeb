@@ -38,7 +38,7 @@ export default function VideoContainer({
 
       {/* Icon khi tắt Camera */}
       {!isCameraOn && (
-        <div className="flex items-center justify-center w-full h-full bg-gray-800">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
           <div className="p-6 bg-gray-700 rounded-full">
             <VideoOff
               size={isLocal && layoutMode !== 'split' ? 24 : 48}
