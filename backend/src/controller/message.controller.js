@@ -128,7 +128,9 @@ export const sendMessage = async (req, res) => {
       }
 
       const roomName = `group_${receiverOrGroupId}`
-      io.to(roomName).emit('newMessage', newMessage)
+      io.to(roomName)
+        .except(getReceiverSocketId(senderid))
+        .emit('newMessage', newMessage)
     } else {
       newMessage = await Message.create({
         senderid,
