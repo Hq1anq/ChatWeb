@@ -4,6 +4,7 @@ import {
   getUsersForSidebar,
   getMessages,
   sendMessage,
+  forwardMessage,
   toggleReaction,
   getReactions,
   markAsSeen,
@@ -16,12 +17,16 @@ const router = express.Router()
 router.get('/users', protectedRoute, getUsersForSidebar)
 router.get('/:id', protectedRoute, getMessages)
 
+// Send message (hỗ trợ reply qua body.replyToId)
 router.post(
   '/send/:id',
   protectedRoute,
   uploadMessage.single('file'),
   sendMessage
 )
+
+// Forward message
+router.post('/forward/:id', protectedRoute, forwardMessage)
 
 // Reaction routes
 router.post('/:messageId/reaction', protectedRoute, toggleReaction)

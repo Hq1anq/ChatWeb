@@ -41,7 +41,6 @@ export const getMessages = async (req, res) => {
           WHERE r.messageid IN (${messageIds.join(',')})
         `)
 
-      // Group reactions theo messageid
       const reactionsMap = {}
       reactionsResult.recordset.forEach((r) => {
         if (!reactionsMap[r.messageid]) {
@@ -54,10 +53,18 @@ export const getMessages = async (req, res) => {
         })
       })
 
-      // Gắn reactions vào messages
+      // Gắn reactions và format replyTo vào messages
       messages = messages.map((msg) => ({
         ...msg,
         reactions: reactionsMap[msg.messageid] || [],
+        // Format replyTo từ dữ liệu join
+        replyTo: msg.replyToId ? {
+          messageId: msg.replyToId,
+          content: msg.replyContent,
+          file: msg.replyFile,
+          senderName: msg.replySenderName,
+          senderId: msg.replySenderId
+        } : null
       }))
     }
 
@@ -72,7 +79,7 @@ export const sendMessage = async (req, res) => {
   try {
     const { id: receiverOrGroupId } = req.params
     const senderid = req.user.userid
-    const { content, isGroup, mentions } = req.body
+    const { content, isGroup, mentions, replyToId } = req.body
 
     let file = ''
     if (req.file) {
@@ -94,7 +101,31 @@ export const sendMessage = async (req, res) => {
         group_id: receiverOrGroupId,
         content,
         file,
+        replyToId: replyToId || null,
+        isForwarded: false
       })
+
+      // Nếu có replyToId, lấy thông tin tin nhắn gốc
+      if (replyToId) {
+        const pool = await getConnection()
+        const replyResult = await pool.request()
+          .input('replyToId', sql.Int, replyToId)
+          .query(`
+            SELECT m.content, m.[file], u.fullname as senderName, m.senderid
+            FROM Messages m
+            JOIN Users u ON m.senderid = u.userid
+            WHERE m.messageid = @replyToId
+          `)
+        if (replyResult.recordset[0]) {
+          newMessage.replyTo = {
+            messageId: parseInt(replyToId),
+            content: replyResult.recordset[0].content,
+            file: replyResult.recordset[0].file,
+            senderName: replyResult.recordset[0].senderName,
+            senderId: replyResult.recordset[0].senderid
+          }
+        }
+      }
 
       const roomName = `group_${receiverOrGroupId}`
       io.to(roomName).emit('newMessage', newMessage)
@@ -105,7 +136,31 @@ export const sendMessage = async (req, res) => {
         group_id: null,
         content,
         file,
+        replyToId: replyToId || null,
+        isForwarded: false
       })
+
+      // Nếu có replyToId, lấy thông tin tin nhắn gốc - ĐÃ SỬA m.[file]
+      if (replyToId) {
+        const pool = await getConnection()
+        const replyResult = await pool.request()
+          .input('replyToId', sql.Int, replyToId)
+          .query(`
+            SELECT m.content, m.[file], u.fullname as senderName, m.senderid
+            FROM Messages m
+            JOIN Users u ON m.senderid = u.userid
+            WHERE m.messageid = @replyToId
+          `)
+        if (replyResult.recordset[0]) {
+          newMessage.replyTo = {
+            messageId: parseInt(replyToId),
+            content: replyResult.recordset[0].content,
+            file: replyResult.recordset[0].file,
+            senderName: replyResult.recordset[0].senderName,
+            senderId: replyResult.recordset[0].senderid
+          }
+        }
+      }
 
       const receiverSocketId = getReceiverSocketId(receiverOrGroupId)
       if (receiverSocketId) {
@@ -115,6 +170,7 @@ export const sendMessage = async (req, res) => {
 
     res.status(201).json(newMessage)
 
+    // Xử lý mentions
     if (isGroup === 'true' && mentions) {
       let mentionedIds = []
       try {
@@ -163,6 +219,63 @@ export const sendMessage = async (req, res) => {
     }
   } catch (error) {
     console.error('Error in sendMessage controller:', error.message)
+    res.status(500).json({ message: 'Internal Server Error.' })
+  }
+}
+
+// ========== FORWARD MESSAGE API ==========
+export const forwardMessage = async (req, res) => {
+  try {
+    const { id: receiverOrGroupId } = req.params
+    const senderid = req.user.userid
+    const { originalMessageId, isGroup } = req.body
+
+    if (!originalMessageId) {
+      return res.status(400).json({ message: 'Original message ID is required' })
+    }
+
+    // Lấy tin nhắn gốc
+    const originalMessage = await Message.getById(originalMessageId)
+    
+    if (!originalMessage) {
+      return res.status(404).json({ message: 'Original message not found' })
+    }
+
+    let newMessage
+
+    if (isGroup === 'true' || isGroup === true) {
+      newMessage = await Message.create({
+        senderid,
+        receiverid: null,
+        group_id: receiverOrGroupId,
+        content: originalMessage.content,
+        file: originalMessage.file,
+        replyToId: null,
+        isForwarded: true
+      })
+
+      const roomName = `group_${receiverOrGroupId}`
+      io.to(roomName).emit('newMessage', newMessage)
+    } else {
+      newMessage = await Message.create({
+        senderid,
+        receiverid: receiverOrGroupId,
+        group_id: null,
+        content: originalMessage.content,
+        file: originalMessage.file,
+        replyToId: null,
+        isForwarded: true
+      })
+
+      const receiverSocketId = getReceiverSocketId(receiverOrGroupId)
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit('newMessage', newMessage)
+      }
+    }
+
+    res.status(201).json(newMessage)
+  } catch (error) {
+    console.error('Error in forwardMessage controller:', error.message)
     res.status(500).json({ message: 'Internal Server Error.' })
   }
 }
@@ -297,8 +410,9 @@ export const getReactions = async (req, res) => {
 
 export const markAsSeen = async (req, res) => {
   try {
-    const { senderId } = req.params // ID của người gửi tin nhắn
-    const viewerId = req.user.userid // ID của người đang xem
+    const { senderId } = req.params
+    const viewerId = req.user.userid
+    const { isGroup } = req.query
 
     const pool = await getConnection()
     const now = new Date()
@@ -313,10 +427,10 @@ export const markAsSeen = async (req, res) => {
           UPDATE Messages 
           SET seen = 1, seenAt = @seenAt 
           WHERE group_id = @groupId 
-            AND senderid != @oderId 
+            AND senderid != @viewerId 
             AND (seen = 0 OR seen IS NULL)
         `)
-   } else {
+    } else {
       await pool
         .request()
         .input('viewerId', sql.Int, viewerId)
@@ -325,12 +439,11 @@ export const markAsSeen = async (req, res) => {
         .query(`
           UPDATE Messages 
           SET seen = 1, seenAt = @seenAt 
-          WHERE receiverid = @oderId 
+          WHERE receiverid = @viewerId 
             AND senderid = @senderId 
             AND (seen = 0 OR seen IS NULL)
         `)
 
-      // Emit socket cho người gửi
       const senderSocketId = getReceiverSocketId(senderId)
       if (senderSocketId) {
         io.to(senderSocketId).emit('messagesSeen', {
