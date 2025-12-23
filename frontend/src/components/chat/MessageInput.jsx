@@ -1,10 +1,9 @@
-import { useState, useRef } from 'react'
-import { Send, Paperclip, X, Loader2, FileText, Image, Smile } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Send, Paperclip, X, Loader2, FileText, Image, Smile, Reply } from 'lucide-react'
 import { useChatStore } from '../../store/chatStore'
 import { useAuthStore } from '../../store/authStore'
 import toast from 'react-hot-toast'
 import { getProfilePic } from '../../lib/utils'
-import EmojiPicker from './EmojiPicker'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 
@@ -18,7 +17,7 @@ const EMOJI_CATEGORIES = {
   'Đồ ăn': ['🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🌮', '🍕', '🍔', '🍟', '🌭', '🍿', '🧁', '🍰', '🎂', '🍩', '🍪', '🍫'],
 }
 
-const MessageInput = () => {
+const MessageInput = ({ replyingTo, onCancelReply }) => {
   const [message, setMessage] = useState('')
   const [fileAttachment, setFileAttachment] = useState(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -33,6 +32,13 @@ const MessageInput = () => {
   const [showMentions, setShowMentions] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
   const [cursorPosition, setCursorPosition] = useState(0)
+
+  // Focus vào textarea khi đang reply
+  useEffect(() => {
+    if (replyingTo && textareaRef.current) {
+      textareaRef.current.focus()
+    }
+  }, [replyingTo])
 
   const getFileIcon = (file) => {
     if (file.type.startsWith('image/')) return <Image size={24} className="text-success" />
@@ -51,13 +57,15 @@ const MessageInput = () => {
       return
     }
 
-    const result = await sendMessage(message, fileAttachment)
+    // Gửi tin nhắn kèm replyToId nếu đang reply
+    const result = await sendMessage(message, fileAttachment, replyingTo?.messageId || null)
 
     if (result.success) {
       setMessage('')
       setFileAttachment(null)
       setShowMentions(false)
       setShowEmojiPicker(false)
+      if (onCancelReply) onCancelReply() // Hủy trạng thái reply
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
     }
   }
@@ -143,6 +151,10 @@ const MessageInput = () => {
       e.preventDefault()
       handleSubmit(e)
     }
+    // Nhấn Escape để hủy reply
+    if (e.key === 'Escape' && replyingTo && onCancelReply) {
+      onCancelReply()
+    }
   }
 
   // Xử lý chọn emoji
@@ -165,8 +177,41 @@ const MessageInput = () => {
         .filter(m => (m.nickname || m.fullname).toLowerCase().includes(mentionQuery.toLowerCase()))
     : []
 
+  // Truncate text helper
+  const truncateText = (text, maxLength = 60) => {
+    if (!text) return ''
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
+  }
+
   return (
     <div className="relative">
+      {/* Reply Preview */}
+      {replyingTo && (
+        <div className="mb-2 p-2 bg-base-200 rounded-lg border-l-4 border-primary flex items-center justify-between animate-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Reply size={16} className="shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <span className="text-xs font-semibold text-primary block">
+                Đang trả lời {replyingTo.senderName}
+              </span>
+              <p className="text-xs text-base-content/70 truncate">
+                {replyingTo.file && !replyingTo.content 
+                  ? '📎 File đính kèm' 
+                  : truncateText(replyingTo.content)}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onCancelReply}
+            className="btn btn-ghost btn-circle btn-xs shrink-0 ml-2"
+            title="Hủy trả lời (Esc)"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {/* Popup Gợi ý Tag */}
       {showMentions && filteredMembers.length > 0 && (
         <div className="absolute bottom-full left-0 mb-2 w-64 bg-base-100 shadow-xl border border-base-300 rounded-lg overflow-hidden z-50">
@@ -249,7 +294,7 @@ const MessageInput = () => {
                 {getFileIcon(fileAttachment.file)}
               </div>
             )}
-            <span className="truncate max-w-37.5 md:max-w-50 text-sm">{fileAttachment.file.name}</span>
+            <span className="truncate max-w-[150px] md:max-w-[200px] text-sm">{fileAttachment.file.name}</span>
           </div>
           <button type="button" onClick={removeFile} className="absolute -top-2 -right-2 btn btn-circle btn-xs btn-error">
             <X size={14} />
@@ -285,8 +330,12 @@ const MessageInput = () => {
         {/* Textarea */}
         <textarea
           ref={textareaRef}
-          placeholder={isSendingMessage ? 'Đang gửi...' : 'Nhập tin nhắn...'}
-          className="textarea textarea-bordered w-full resize-none min-h-10 md:min-h-12 max-h-30 md:max-h-37.5 leading-normal py-2 md:py-3 text-sm md:text-base"
+          placeholder={
+            replyingTo 
+              ? `Trả lời ${replyingTo.senderName}...` 
+              : (isSendingMessage ? 'Đang gửi...' : 'Nhập tin nhắn...')
+          }
+          className="textarea textarea-bordered w-full resize-none min-h-10 md:min-h-12 max-h-[120px] md:max-h-[150px] leading-normal py-2 md:py-3 text-sm md:text-base"
           value={message}
           onChange={handleInput} 
           onKeyDown={handleKeyDown}

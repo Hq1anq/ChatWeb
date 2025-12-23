@@ -29,8 +29,6 @@ export const useChatStore = create((set, get) => ({
       const id = isGroup ? userOrGroup.groupid : userOrGroup.userid
       
       get().getMessages(id, isGroup)
-
-      // Đánh dấu tin nhắn đã xem khi mở cuộc trò chuyện
       get().markMessagesAsSeen(id, isGroup)
 
       if (typeof window !== 'undefined' && window.innerWidth < 768) {
@@ -39,34 +37,25 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  // Đánh dấu tin nhắn đã xem
   markMessagesAsSeen: (conversationUserId, isGroup = false) => {
     const socket = useAuthStore.getState().socket
     if (!socket || !conversationUserId) return
 
-    // Emit socket event để đánh dấu đã xem
     socket.emit('markAsSeen', {
       conversationUserId,
       isGroup
     })
   },
 
-  // Cập nhật trạng thái seen cho messages
   updateMessagesSeen: (data) => {
-    // eslint-disable-next-line no-unused-vars
-    const { viewerId, senderId, messageIds, isGroup, seenAt } = data
+    const { messageIds, seenAt } = data
     const currentUser = useAuthStore.getState().user
-
-    // Chỉ cập nhật nếu mình là người gửi
-    if (currentUser?.userid === senderId) return
 
     set((state) => ({
       messages: state.messages.map((msg) => {
-        // Nếu có danh sách messageIds cụ thể
         if (messageIds && messageIds.includes(msg.messageid)) {
           return { ...msg, seen: true, seenAt }
         }
-        // Nếu không có danh sách, cập nhật tất cả tin nhắn của mình gửi cho người đó
         if (!messageIds && msg.senderid === currentUser?.userid && !msg.seen) {
           return { ...msg, seen: true, seenAt }
         }
@@ -141,7 +130,7 @@ export const useChatStore = create((set, get) => ({
   sendMessage: async (message, fileAttachment, replyToId = null) => {
     const { selectedUser, messages, groupMembers } = get() 
     
-    if (!selectedUser) return
+    if (!selectedUser) return { success: false }
     const currentUser = useAuthStore.getState().user;
     const isGroup = selectedUser.groupid !== undefined
     const receiverId = isGroup ? selectedUser.groupid : selectedUser.userid
@@ -157,7 +146,7 @@ export const useChatStore = create((set, get) => ({
       isTemp: true,
       seen: false,
       replyToId,
-      sender: useAuthStore.getState().user 
+      sender: currentUser 
     }
 
     set({ messages: [...messages, tempMessage], isSendingMessage: true })
@@ -258,7 +247,6 @@ export const useChatStore = create((set, get) => ({
       if (isBelongToCurrentChat) {
         set({ messages: [...get().messages, newMessage] })
         
-        // Nếu đang xem cuộc trò chuyện này, đánh dấu đã xem
         const currentUser = useAuthStore.getState().user
         if (newMessage.senderid !== currentUser?.userid) {
           const conversationId = isGroupMsg ? newMessage.group_id : newMessage.senderid
@@ -267,7 +255,6 @@ export const useChatStore = create((set, get) => ({
       }
     });
 
-    // Lắng nghe event messagesSeen
     socket.on('messagesSeen', (data) => {
       updateMessagesSeen(data)
     });
@@ -290,7 +277,6 @@ export const useChatStore = create((set, get) => ({
               )
           }));
           toast.success("Đổi biệt danh thành công");
-      // eslint-disable-next-line no-unused-vars
       } catch (error) {
           toast.error("Lỗi đổi biệt danh");
       }

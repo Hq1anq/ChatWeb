@@ -4,7 +4,7 @@ import { useChatStore } from '../../store/chatStore'
 import { isImageFile, getFileName } from '../../lib/utils'
 import { 
   Loader2, FileText, Download, Smile, Check, CheckCheck,
-  Reply, Pin, Forward, MoreHorizontal
+  Reply, Pin, Forward, MoreHorizontal, CornerUpRight
 } from 'lucide-react'
 import axiosInstance from '../../lib/axios'
 import ImageLightbox from './ImageLightbox'
@@ -49,8 +49,8 @@ const MessageStatus = ({ status, fromMe }) => {
   )
 }
 
-// Component hiển thị tin nhắn được reply
-const ReplyPreview = ({ replyTo }) => {
+// Component hiển thị tin nhắn được reply - ĐÃ CẢI THIỆN UI
+const ReplyPreview = ({ replyTo, fromMe }) => {
   if (!replyTo) return null
 
   const truncateText = (text, maxLength = 50) => {
@@ -59,12 +59,24 @@ const ReplyPreview = ({ replyTo }) => {
   }
 
   return (
-    <div className="flex items-center gap-2 mb-2 p-2 bg-base-300/50 rounded-lg border-l-4 border-primary text-xs">
-      <Reply size={12} className="shrink-0 text-primary" />
-      <div className="min-w-0">
-        <span className="font-semibold text-primary">{replyTo.senderName || 'Người dùng'}</span>
-        <p className="truncate text-base-content/70">
-          {replyTo.file && !replyTo.content ? '📎 File đính kèm' : truncateText(replyTo.content)}
+    <div 
+      className={`mb-2 rounded-md overflow-hidden cursor-pointer transition-all hover:opacity-80
+        ${fromMe 
+          ? 'bg-black/20 border-l-4 border-white/50' 
+          : 'bg-white/10 border-l-4 border-primary'
+        }`}
+      title="Click để xem tin nhắn gốc"
+    >
+      <div className="px-3 py-2">
+        {/* Tên người gửi */}
+        <div className={`text-xs font-bold mb-0.5 ${fromMe ? 'text-white/90' : 'text-primary'}`}>
+          {replyTo.senderName || 'Người dùng'}
+        </div>
+        {/* Nội dung tin nhắn */}
+        <p className={`text-xs truncate ${fromMe ? 'text-white/70' : 'text-base-content/70'}`}>
+          {replyTo.file && !replyTo.content 
+            ? '📎 File đính kèm' 
+            : truncateText(replyTo.content)}
         </p>
       </div>
     </div>
@@ -82,6 +94,7 @@ const Message = ({
   status = 'sent',
   isPinned = false,
   replyTo = null,
+  isForwarded = false,
   senderName = '',
   onReply,
   onPin,
@@ -109,7 +122,7 @@ const Message = ({
 
   const fileName = getFileName(file)
   const isImage = isImageFile(file)
-  const fileUrl = `${serverUrl}${file}`
+  const fileUrl = file ? `${serverUrl}${file}` : ''
 
   // Cập nhật reactions khi prop thay đổi
   useEffect(() => {
@@ -124,7 +137,6 @@ const Message = ({
       if (data.messageId === messageId) {
         if (data.action === 'added') {
           setLocalReactions(prev => {
-            // Kiểm tra đã có chưa
             const exists = prev.find(r => r.emoji === data.emoji && r.userId === data.userId)
             if (exists) return prev
             return [...prev, { emoji: data.emoji, userId: data.userId, userName: data.userName }]
@@ -173,7 +185,6 @@ const Message = ({
     setIsReacting(true)
     setShowReactionPicker(false)
 
-    // Optimistic update
     const existingReaction = localReactions.find(
       r => r.emoji === emoji && r.userId === user?.userid
     )
@@ -190,11 +201,9 @@ const Message = ({
     }
 
     try {
-      // Gọi API
       await axiosInstance.post(`/message/${messageId}/reaction`, { emoji })
     } catch (error) {
       console.error('Lỗi khi thả reaction:', error)
-      // Rollback nếu lỗi
       setLocalReactions(reactions)
       toast.error('Không thể thả cảm xúc')
     } finally {
@@ -365,10 +374,18 @@ const Message = ({
             </div>
           )}
 
+          {/* Forwarded indicator */}
+          {isForwarded && (
+            <div className={`flex items-center gap-1 text-xs text-base-content/50 mb-1 ${fromMe ? 'justify-end' : 'justify-start'}`}>
+              <CornerUpRight size={12} />
+              <span>Đã chuyển tiếp</span>
+            </div>
+          )}
+
           {/* Bong bóng chat */}
           <div className={`chat-bubble flex flex-col ${bubbleColor} w-fit max-w-xs md:max-w-sm lg:max-w-md`}>
             {/* Reply preview */}
-            {replyTo && <ReplyPreview replyTo={replyTo} />}
+            {replyTo && <ReplyPreview replyTo={replyTo} fromMe={fromMe} />}
 
             {/* Hiển thị ảnh nếu có */}
             {file && (

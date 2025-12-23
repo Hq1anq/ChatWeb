@@ -3,7 +3,7 @@ import { useAuthStore } from '../../store/authStore'
 import { useChatStore } from '../../store/chatStore'
 import { Pin, X } from 'lucide-react'
 import Message from './Message'
-//import ForwardModal from './ForwardModal'
+import ForwardModal from './ForwardModal'
 
 const isSameDay = (d1, d2) => {
     if (!d2) return false;
@@ -50,18 +50,10 @@ const formatTime = (dateString, isTemp) => {
 }
 
 // Hàm xác định trạng thái tin nhắn
-// eslint-disable-next-line no-unused-vars
-const getMessageStatus = (message, isLastFromMe, allMessages, user) => {
-    // Nếu đang gửi
+const getMessageStatus = (message) => {
     if (message.isTemp) return 'sending'
-    
-    // Nếu đã được xem
     if (message.seen || message.seenAt) return 'seen'
-    
-    // Nếu đã nhận (người nhận online và nhận được tin nhắn)
     if (message.delivered || message.deliveredAt) return 'delivered'
-    
-    // Mặc định là đã gửi
     return 'sent'
 }
 
@@ -69,7 +61,7 @@ const Messages = ({ messages, onReply }) => {
   const { user } = useAuthStore()
   const { groupMembers, selectedUser, markMessagesAsSeen } = useChatStore()
   const lastMessageRef = useRef()
-   // eslint-disable-next-line no-unused-vars
+  
   const [forwardingMessage, setForwardingMessage] = useState(null)
   const [pinnedMessageIds, setPinnedMessageIds] = useState([])
 
@@ -93,7 +85,6 @@ const Messages = ({ messages, onReply }) => {
       const isGroup = selectedUser.groupid !== undefined
       const conversationId = isGroup ? selectedUser.groupid : selectedUser.userid
       
-      // Kiểm tra xem có tin nhắn chưa xem từ người khác không
       const hasUnseenMessages = messages.some(
         msg => msg.senderid !== user?.userid && !msg.seen
       )
@@ -125,29 +116,6 @@ const Messages = ({ messages, onReply }) => {
       onReply(replyData)
     }
   }
-
-  const findReplyToMessage = (replyToId) => {
-    if (!replyToId) return null
-    const originalMsg = messages.find(m => m.messageid === replyToId)
-    if (!originalMsg) return null
-    
-    return {
-      messageId: originalMsg.messageid,
-      content: originalMsg.content,
-      file: originalMsg.file,
-      senderName: originalMsg.senderid === user?.userid 
-        ? 'Bạn' 
-        : (originalMsg.sender?.fullname || selectedUser?.fullname || 'Người dùng'),
-      senderId: originalMsg.senderid
-    }
-  }
-
-  // Tìm tin nhắn cuối cùng của mình đã được xem
-  // eslint-disable-next-line no-unused-vars
-  const lastSeenMessageId = useMemo(() => {
-    const myMessages = messages.filter(m => m.senderid === user?.userid && m.seen)
-    return myMessages.length > 0 ? myMessages[myMessages.length - 1].messageid : null
-  }, [messages, user])
 
   return (
     <div className="flex flex-col gap-2 pb-2">
@@ -185,10 +153,15 @@ const Messages = ({ messages, onReply }) => {
         const isNewDay = index === 0 || !isSameDay(message.created, messages[index - 1].created);
         const isFromMe = message.senderid === user?.userid;
         const isPinned = pinnedMessageIds.includes(message.messageid) || message.isPinned;
-        
-        // Kiểm tra xem đây có phải tin nhắn cuối của mình không
-        const isLastFromMe = isFromMe && 
-          !messages.slice(index + 1).some(m => m.senderid === user?.userid);
+
+        // Lấy thông tin replyTo từ message (đã được backend format sẵn)
+        const replyTo = message.replyTo || (message.replyToId ? {
+          messageId: message.replyToId,
+          content: message.replyContent,
+          file: message.replyFile,
+          senderName: message.replySenderName || (message.replySenderId === user?.userid ? 'Bạn' : 'Người dùng'),
+          senderId: message.replySenderId
+        } : null);
 
         return (
           <div key={message.messageid || message.tempId || index} ref={index === messages.length - 1 ? lastMessageRef : null}>
@@ -207,9 +180,10 @@ const Messages = ({ messages, onReply }) => {
               time={formatTime(message.created, message.isTemp)}
               isTemp={message.isTemp}
               reactions={message.reactions || []}
-              status={getMessageStatus(message, isLastFromMe, messages, user)}
+              status={getMessageStatus(message)}
               isPinned={isPinned}
-              replyTo={findReplyToMessage(message.replyToId)}
+              replyTo={replyTo}
+              isForwarded={message.isForwarded}
               senderName={message.nickname || message.sender?.fullname || message.fullname}
               message={message}
               onReply={handleReply}
@@ -221,12 +195,12 @@ const Messages = ({ messages, onReply }) => {
       })}
 
       {/* Forward Modal */}
-      {/*forwardingMessage && (
+      {forwardingMessage && (
         <ForwardModal
           message={forwardingMessage}
           onClose={() => setForwardingMessage(null)}
         />
-      )*/}
+      )}
     </div>
   )
 }
