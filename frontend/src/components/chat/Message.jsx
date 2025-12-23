@@ -19,22 +19,22 @@ const MessageStatus = ({ status, fromMe }) => {
 
   const statusConfig = {
     sending: {
-      icon: <Loader2 size={14} className="animate-spin" />,
-      color: 'text-base-content/50',
+      icon: <Loader2 size={14} className="animate-spin" strokeWidth={3} />,
+      color: 'text-base-content',
       title: 'Đang gửi...'
     },
     sent: {
-      icon: <Check size={14} />,
-      color: 'text-base-content/50',
+      icon: <Check size={14} strokeWidth={3} />,
+      color: 'text-base-content',
       title: 'Đã gửi'
     },
     delivered: {
-      icon: <CheckCheck size={14} />,
-      color: 'text-base-content/50',
+      icon: <CheckCheck size={14} strokeWidth={3} />,
+      color: 'text-base-content',
       title: 'Đã nhận'
     },
     seen: {
-      icon: <CheckCheck size={14} />,
+      icon: <CheckCheck size={14} strokeWidth={3} />,
       color: 'text-info',
       title: 'Đã xem'
     }

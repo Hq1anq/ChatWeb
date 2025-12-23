@@ -4,6 +4,7 @@ import axiosInstance from '../lib/axios'
 import { toast } from 'react-hot-toast'
 import { io } from 'socket.io-client'
 import { useCallStore } from './callStore'
+import { useChatStore } from './chatStore'
 
 export const useAuthStore = create(
   persist(
@@ -188,7 +189,14 @@ export const useAuthStore = create(
             userId: user.userid,
           },
         })
-        socket.connect()
+
+        socket.on("connect", () => {
+          console.log("Socket connected với ID:", socket.id);
+          
+          useChatStore.getState().unsubscribeFromMessages()
+          useChatStore.getState().onMessage(); 
+          useCallStore.getState().subscribeToCallEvents();
+        });
 
         set({ socket: socket })
 

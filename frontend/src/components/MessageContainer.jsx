@@ -14,8 +14,6 @@ const MessageContainer = () => {
     getMessages,
     messages,
     isLoadingMessages,
-    onMessage,
-    offMessage,
     openSidebar,
     groupMembers,
     setSelectedUser,
@@ -37,6 +35,7 @@ const MessageContainer = () => {
   const chatId = isGroup ? selectedUser?.groupid : selectedUser?.userid
 
   useEffect(() => {
+    console.log(1234)
     if (!chatId) return
 
     // Gọi hàm getMessages với tham số isGroup
@@ -46,17 +45,10 @@ const MessageContainer = () => {
       getGroupMembers(chatId)
     }
 
-    onMessage()
     // Reset state settings khi chuyển chat
     setShowGroupSettings(false)
 
-    return () => offMessage()
-  }, [chatId, isGroup, getMessages, onMessage, offMessage, getGroupMembers])
-
-  // Auto scroll to bottom khi có tin nhắn mới
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [chatId, isGroup, getMessages, getGroupMembers])
 
   // Reset reply khi đổi chat
   useEffect(() => {

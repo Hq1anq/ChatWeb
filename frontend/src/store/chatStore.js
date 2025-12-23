@@ -235,32 +235,45 @@ export const useChatStore = create((set, get) => ({
   },
 
   onMessage: () => {
-    const { selectedUser, updateSidebarList, markMessagesAsSeen, updateMessagesSeen } = get()
     const socket = useAuthStore.getState().socket
     if(!socket) return;
 
     socket.on('newMessage', (newMessage) => {
-      const isGroupMsg = newMessage.group_id !== null;
-      updateSidebarList(newMessage, isGroupMsg);
+      console.log("ĐÃ NHẬN SOCKET TẠI FRONTEND:", newMessage);
 
-      const currentSelectedId = selectedUser ? (selectedUser.groupid || selectedUser.userid) : null;
+      const state = get() // LẤY STATE MỚI NHẤT
+      const selectedUser = state.selectedUser
+
+      const isGroupMsg = newMessage.group_id !== null;
+      state.updateSidebarList(newMessage, isGroupMsg);
+
+      if (!selectedUser) return
+
+      const currentSelectedId = isGroupMsg ? selectedUser.groupid : selectedUser.userid;
+
       const isBelongToCurrentChat = isGroupMsg 
           ? newMessage.group_id === currentSelectedId 
-          : (newMessage.senderid === currentSelectedId || newMessage.senderid === useAuthStore.getState().user.userid);
+          : (
+            newMessage.senderid === currentSelectedId ||
+            newMessage.receiverId === currentSelectedId
+          );
 
       if (isBelongToCurrentChat) {
-        set({ messages: [...get().messages, newMessage] })
+        console.log("CẬP NHẬT TIN NHẮN VÀO CHAT HIỆN TẠI");
+        set(state => ({
+          messages: [...state.messages, newMessage]
+        }))
         
         const currentUser = useAuthStore.getState().user
         if (newMessage.senderid !== currentUser?.userid) {
           const conversationId = isGroupMsg ? newMessage.group_id : newMessage.senderid
-          markMessagesAsSeen(conversationId, isGroupMsg)
+          state.markMessagesAsSeen(conversationId, isGroupMsg)
         }
       }
     });
 
     socket.on('messagesSeen', (data) => {
-      updateMessagesSeen(data)
+      get().updateMessagesSeen(data)
     });
 
     socket.on('new-group', (newGroup) => {
@@ -288,6 +301,7 @@ export const useChatStore = create((set, get) => ({
 
   offMessage: () => {
     const socket = useAuthStore.getState().socket
+    console.log("Off", socket.id)
     if(socket) {
       socket.off('newMessage')
       socket.off('messagesSeen')

@@ -27,8 +27,8 @@ const SidebarItem = ({ item, isSelected, isOnline, onClick, isGroup }) => {
   return (
     <div
       onClick={onClick}
-      className={`flex gap-3 items-center p-3 rounded-lg cursor-pointer transition-colors
-        ${isSelected ? 'bg-primary text-primary-content' : 'hover:bg-base-300'}`}
+      className={`flex gap-3 items-center p-3 rounded-lg transition-colors
+        ${isSelected ? 'bg-primary text-primary-content' : 'hover:bg-base-300 cursor-pointer'}`}
     >
       <div className={`avatar shrink-0 ${!isGroup && (isOnline ? 'online' : 'offline')}`}>
         <div className="relative mx-auto lg:mx-0">
@@ -127,16 +127,16 @@ const Sidebar = () => {
         {/* Tabs Switcher */}
         <div className="grid grid-cols-2 gap-2 bg-base-300 p-1 rounded-lg">
             <button 
-                onClick={() => setActiveTab('chats')}
-                className={`flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'chats' ? 'bg-base-100 shadow text-primary' : 'hover:bg-base-200 text-base-content/60'}`}
+              onClick={() => setActiveTab('chats')}
+              className={`flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'chats' ? 'bg-base-100 shadow text-primary' : 'hover:bg-base-200 text-base-content/60 cursor-pointer'}`}
             >
-                <MessageSquare size={16} /> Tin nhắn
+              <MessageSquare size={16} /> Tin nhắn
             </button>
             <button 
-                onClick={() => setActiveTab('groups')}
-                className={`flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'groups' ? 'bg-base-100 shadow text-primary' : 'hover:bg-base-200 text-base-content/60'}`}
+              onClick={() => setActiveTab('groups')}
+              className={`flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'groups' ? 'bg-base-100 shadow text-primary' : 'hover:bg-base-200 text-base-content/60 cursor-pointer'}`}
             >
-                <Users size={16} /> Nhóm
+              <Users size={16} /> Nhóm
             </button>
         </div>
       </div>
