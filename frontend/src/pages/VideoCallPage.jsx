@@ -1,5 +1,5 @@
 import { useCallStore } from '../store/callStore'
-import IncomingCallDialog from '../components/call/inComingCallDialog'
+import IncomingCallDialog from '../components/call/InComingCallDialog'
 import VideoCall from '../components/call/VideoCall'
 
 const VideoCallPage = () => {
