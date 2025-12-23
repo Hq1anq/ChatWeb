@@ -2,9 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import path from 'path' // 2. Import path
-import https from 'https'
 import http from 'http'
-import fs from 'fs'
 
 // Import từ file socket của bạn
 import { initializeSocketIO } from './lib/socket.js'
@@ -19,23 +17,12 @@ const PORT = process.env.PORT || 5000
 
 const app = express()
 
-const isHttps = process.env.CLIENT_URL?.startsWith('https')
-
-let server
-
-if (isHttps) {
-  const options = {
-    key: fs.readFileSync(path.join(__dirname, 'cert.key')),
-    cert: fs.readFileSync(path.join(__dirname, 'cert.crt')),
-  }
-  server = https.createServer(options, app)
-} else {
-  server = http.createServer(app)
-}
+const server = http.createServer(app)
 
 initializeSocketIO(server, app)
 
 // Middleware
+app.use(express.static(path.join(__dirname, '../frontend/dist')))
 app.use(express.json())
 app.use(cookieParser())
 
@@ -61,6 +48,10 @@ app.use(
 )
 
 // Routes
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'))
+})
 app.use('/api/auth', authRoutes)
 app.use('/api/message', messageRoutes)
 app.use('/api/groups', groupRoutes) // <--- MỚI: Sử dụng route groups

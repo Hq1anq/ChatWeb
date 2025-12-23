@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node --env-file .env --watch src/server.js",
     "debug": "node --env-file .env --inspect src/server.js",
-    "seed": "node --env-file .env src/lib/seedDB.js"
+    "seed": "node --env-file .env src/lib/seedDB.js",
+    "start": "node src/server.js"
   },
   "keywords": [],
   "author": "",

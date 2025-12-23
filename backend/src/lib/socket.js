@@ -5,10 +5,10 @@ import sql from 'mssql'
 let io
 let app
 
-export const initializeSocketIO = (httpsServer, expressApp) => {
+export const initializeSocketIO = (httpServer, expressApp) => {
   app = expressApp
 
-  io = new Server(httpsServer, {
+  io = new Server(httpServer, {
     cors: {
       origin: [process.env.CLIENT_URL, 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
       credentials: true,

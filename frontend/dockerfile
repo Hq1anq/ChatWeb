@@ -1,0 +1,12 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+COPY . .
+
+# Chạy build để tạo thư mục /app/dist
+RUN npm run build
+
+CMD ["echo", "Build finished"]
