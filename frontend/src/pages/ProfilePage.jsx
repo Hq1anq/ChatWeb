@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { User, Mail, Edit2, Save, KeyRound, Loader2 } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import toast from 'react-hot-toast'
+import { getProfilePic } from '../lib/utils'
 
 const ProfilePage = () => {
   const {
@@ -96,13 +97,7 @@ const ProfilePage = () => {
               <div className="avatar mb-4">
                 <div className="w-24 h-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 overflow-hidden">
                   <img
-                    src={
-                      user?.profilepic
-                        ? `${import.meta.env.VITE_SERVER_URL}${user.profilepic}`
-                        : `https://placehold.co/600x600/E5E7EB/333333?text=${user.fullname.charAt(
-                            0
-                          )}`
-                    }
+                    src={getProfilePic(user)}
                     alt="User Avatar"
                     className="object-cover w-full h-full"
                   />

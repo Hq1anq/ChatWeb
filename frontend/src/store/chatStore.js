@@ -7,36 +7,121 @@ import { getFileName } from '../lib/utils'
 export const useChatStore = create((set, get) => ({
   messages: [],
   users: [],
+  groups: [],
+  groupMembers: [],
   selectedUser: null,
   isUsersLoading: false,
+  isGroupsLoading: false,
   isLoadingMessages: false,
   isSendingMessage: false,
+  isCreatingGroup: false,
 
-  // Chọn user để chat
-  setSelectedUser: (user) => {
-    set({ selectedUser: user })
-    if (user) {
-      get().getMessages(user.userid)
+  isSidebarOpen: true,
+  toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+  closeSidebar: () => set({ isSidebarOpen: false }),
+  openSidebar: () => set({ isSidebarOpen: true }),
+
+  setSelectedUser: (userOrGroup) => {
+    set({ selectedUser: userOrGroup, groupMembers: [] }); 
+
+    if (userOrGroup) {
+      const isGroup = userOrGroup.groupid !== undefined
+      const id = isGroup ? userOrGroup.groupid : userOrGroup.userid
+      
+      get().getMessages(id, isGroup)
+      get().markMessagesAsSeen(id, isGroup)
+
+      if (isGroup) {
+        get().getGroupMembers(id); // Tự động load thành viên ngay khi chọn group
+      }
+
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        set({ isSidebarOpen: false })
+      }
     }
+  },
+
+  markMessagesAsSeen: (conversationUserId, isGroup = false) => {
+    const socket = useAuthStore.getState().socket
+    if (!socket || !conversationUserId) return
+
+    socket.emit('markAsSeen', {
+      conversationUserId,
+      isGroup
+    })
+  },
+
+  updateMessagesSeen: (data) => {
+    const { messageIds, seenAt } = data
+    const currentUser = useAuthStore.getState().user
+
+    set((state) => ({
+      messages: state.messages.map((msg) => {
+        if (messageIds && messageIds.includes(msg.messageid)) {
+          return { ...msg, seen: true, seenAt }
+        }
+        if (!messageIds && msg.senderid === currentUser?.userid && !msg.seen) {
+          return { ...msg, seen: true, seenAt }
+        }
+        return msg
+      })
+    }))
   },
 
   getUsers: async () => {
     set({ isUsersLoading: true })
     try {
       const response = await axiosInstance.get('/message/users')
-      set({ users: response.data })
+      const usersData = Array.isArray(response.data) ? response.data : (response.data.users || []);
+      set({ users: usersData })
     } catch (error) {
-      toast.error(error.response.data.message)
+      console.error("Error fetching users:", error);
+      toast.error(error.response?.data?.message || 'Lỗi khi tải danh sách')
+      set({ users: [] })
     } finally {
       set({ isUsersLoading: false })
     }
   },
 
-  // Lấy tin nhắn với user được chọn
-  getMessages: async (userId) => {
+  getGroups: async () => {
+    set({ isGroupsLoading: true })
+    try {
+      const response = await axiosInstance.get('/groups')
+      set({ groups: response.data })
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+    } finally {
+      set({ isGroupsLoading: false })
+    }
+  },
+
+  createGroup: async (groupData) => {
+    set({ isCreatingGroup: true })
+    try {
+      const response = await axiosInstance.post('/groups/create', groupData)
+      set((state) => ({ groups: [response.data.group, ...state.groups] }))
+      return true
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Tạo nhóm thất bại')
+      return false
+    } finally {
+      set({ isCreatingGroup: false })
+    }
+  },
+
+  getGroupMembers: async (groupId) => {
+    try {
+      const res = await axiosInstance.get(`/groups/${groupId}/members`)
+      set({ groupMembers: res.data.members })
+    } catch (error) {
+      console.error(error)
+    }
+  },
+
+  getMessages: async (id, isGroup = false) => {
     set({ isLoadingMessages: true })
     try {
-      const response = await axiosInstance.get(`/message/${userId}`)
+      const response = await axiosInstance.get(`/message/${id}?isGroup=${isGroup}`)
       set({ messages: response.data })
     } catch (error) {
       console.error('Lỗi khi tải tin nhắn:', error)
@@ -46,137 +131,191 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  // Gửi tin nhắn với Optimistic UI
-  sendMessage: async (message, fileAttachment) => {
-    console.log('message: ', message)
-    console.log('file: ', fileAttachment)
-    const { selectedUser, messages } = get()
-    if (!selectedUser) return
+  sendMessage: async (message, fileAttachment, replyToId = null) => {
+    const { selectedUser, messages, groupMembers } = get() 
+    
+    if (!selectedUser) return { success: false }
+    const currentUser = useAuthStore.getState().user;
+    const isGroup = selectedUser.groupid !== undefined
+    const receiverId = isGroup ? selectedUser.groupid : selectedUser.userid
 
-    // Tạo tin nhắn tạm thời (Optimistic UI)
     const tempMessage = {
       messageid: `temp-${Date.now()}`,
-      senderid: 'me', // Sẽ được thay thế bằng userid thật
-      receiverid: selectedUser.userid,
+      senderid: currentUser.userid,
+      receiverid: isGroup ? null : receiverId,
+      group_id: isGroup ? receiverId : null,
       content: message,
       file: fileAttachment ? fileAttachment.file.name : null,
       created: new Date().toISOString(),
-      isTemp: true, // Đánh dấu là tin nhắn tạm
+      isTemp: true,
+      seen: false,
+      replyToId,
+      sender: currentUser 
     }
 
-    // Thêm tin nhắn vào UI ngay lập tức
     set({ messages: [...messages, tempMessage], isSendingMessage: true })
+
+    const mentionMatches = (typeof message === 'string') ? message.match(/@([\p{L}\p{N}_ ]+)/gu) : null;
+    let mentionedIds = [];
+    
+    if (mentionMatches && groupMembers && groupMembers.length > 0) {
+        mentionMatches.forEach(match => {
+            const name = match.substring(1).trim();
+            const user = groupMembers.find(m => (m.nickname || m.fullname) === name);
+            if (user) mentionedIds.push(user.userid);
+        });
+    }
 
     try {
       const formData = new FormData()
+      if (message.trim()) formData.append('content', message)
+      if (fileAttachment) formData.append('file', fileAttachment.file)
+      if (replyToId) formData.append('replyToId', replyToId)
+      
+      formData.append('isGroup', isGroup)
 
-      if (message.trim()) {
-        formData.append('content', message)
-      }
-
-      if (fileAttachment) {
-        // Multer ở backend expects file với keyvalue 'image'
-        formData.append('file', fileAttachment.file)
+      if (mentionedIds.length > 0) {
+          formData.append('mentions', JSON.stringify(mentionedIds));
       }
 
       const response = await axiosInstance.post(
-        `/message/send/${selectedUser.userid}`,
+        `/message/send/${receiverId}`,
         formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
+        { headers: { 'Content-Type': 'multipart/form-data' } }
       )
 
-      get().updateSidebarUser(response.data)
+      get().updateSidebarList(response.data, isGroup)
 
-      // Thay thế tin nhắn tạm bằng tin nhắn thật từ server
-      set({
-        messages: messages
+      set((state) => ({
+        messages: state.messages
           .filter((msg) => msg.messageid !== tempMessage.messageid)
-          .concat(response.data),
-      })
+          .concat({ ...response.data, seen: false }),
+      }))
 
       return { success: true }
     } catch (error) {
       console.error('Lỗi khi gửi tin nhắn:', error)
       toast.error('Không thể gửi tin nhắn')
-
-      // Xóa tin nhắn tạm nếu gửi thất bại
-      set({
-        messages: messages.filter(
-          (msg) => msg.messageid !== tempMessage.messageid
-        ),
-      })
-
+      set((state) => ({
+        messages: state.messages.filter((msg) => msg.messageid !== tempMessage.messageid),
+      }))
       return { success: false, error: error.response?.data?.message }
     } finally {
       set({ isSendingMessage: false })
     }
   },
 
-  // Cập nhật sidebar list (users array)
-  updateSidebarUser: (message) => {
-    set((state) => {
-      const { user } = useAuthStore.getState() // user hiện tại
-      const targetUserId =
-        message.senderid === user.userid ? message.receiverid : message.senderid // người còn lại
-      const latestMessageContent =
-        message.content || (message.file ? getFileName(message.file) : '')
+  updateSidebarList: (newMessage, isGroup) => {
+     set((state) => {
+        const targetId = isGroup ? newMessage.group_id : (
+            newMessage.senderid === useAuthStore.getState().user.userid ? newMessage.receiverid : newMessage.senderid
+        );
 
-      let updatedUsers = [...state.users]
-      let targetUserIndex = -1
+        const listKey = isGroup ? 'groups' : 'users';
+        const idKey = isGroup ? 'groupid' : 'userid';
+        
+        let updatedList = [...state[listKey]];
+        let targetIndex = updatedList.findIndex(item => item[idKey] === targetId);
+        
+        const latestMessageContent = newMessage.content || (newMessage.file ? getFileName(newMessage.file) : 'File đính kèm');
 
-      // Tìm user trong danh sách sidebar
-      const targetUser = updatedUsers.find((u, index) => {
-        if (u.userid === targetUserId) {
-          targetUserIndex = index
-          return true
+        if (targetIndex !== -1) {
+            const updatedItem = {
+                ...updatedList[targetIndex],
+                latestMessage: latestMessageContent,
+                latestTime: newMessage.created,
+                latestSenderId: newMessage.senderid,
+                latestSenderName: newMessage.sender?.fullname || "Bạn" 
+            };
+            updatedList.splice(targetIndex, 1);
+            updatedList.unshift(updatedItem);
         }
-        return false
-      })
-
-      if (targetUser) {
-        const updatedTargetUser = {
-          ...targetUser,
-          latestMessage: latestMessageContent,
-          latestTime: message.created,
-        }
-
-        // xóa user khỏi vị trí hiện tại
-        updatedUsers.splice(targetUserIndex, 1)
-
-        // thêm user vào đầu danh sách (reorder)
-        updatedUsers.unshift(updatedTargetUser)
-      }
-
-      return { users: updatedUsers }
-    })
+        return { [listKey]: updatedList };
+     })
   },
 
-  // Thêm tin nhắn mới từ socket (realtime)
   onMessage: () => {
-    const { selectedUser, updateSidebarUser } = get()
-
-    if (!selectedUser) return
-
     const socket = useAuthStore.getState().socket
+    if(!socket) return;
 
     socket.on('newMessage', (newMessage) => {
-      // Caapj nhaatj side bar khi có tin nhắn mới
-      updateSidebarUser(newMessage)
+      console.log("ĐÃ NHẬN SOCKET TẠI FRONTEND:", newMessage);
 
-      if (newMessage.senderid === selectedUser.userid)
-        set({ messages: [...get().messages, newMessage] })
-    })
+      const state = get() // LẤY STATE MỚI NHẤT
+      const selectedUser = state.selectedUser
+
+      const isGroupMsg = newMessage.group_id !== null;
+      state.updateSidebarList(newMessage, isGroupMsg);
+
+      if (!selectedUser) return
+
+      const currentSelectedId = isGroupMsg ? selectedUser.groupid : selectedUser.userid;
+
+      const isBelongToCurrentChat = isGroupMsg 
+          ? newMessage.group_id === currentSelectedId 
+          : (
+            newMessage.senderid === currentSelectedId ||
+            newMessage.receiverId === currentSelectedId
+          );
+
+      if (isBelongToCurrentChat) {
+        console.log("CẬP NHẬT TIN NHẮN VÀO CHAT HIỆN TẠI");
+        set(state => ({
+          messages: [...state.messages, newMessage]
+        }))
+        
+        const currentUser = useAuthStore.getState().user
+        if (newMessage.senderid !== currentUser?.userid) {
+          const conversationId = isGroupMsg ? newMessage.group_id : newMessage.senderid
+          state.markMessagesAsSeen(conversationId, isGroupMsg)
+        }
+      }
+    });
+
+    socket.on('messagesSeen', (data) => {
+      get().updateMessagesSeen(data)
+    });
+
+    socket.on('new-group', (newGroup) => {
+        set(state => ({
+            groups: [newGroup, ...state.groups]
+        }));
+        socket.emit("join-group", newGroup.groupid);
+        toast.success(`Bạn vừa được thêm vào nhóm: ${newGroup.name}`);
+    });
+  },
+
+  updateNickname: async (groupId, userId, nickname) => {
+      try {
+          await axiosInstance.put(`/groups/${groupId}/nickname`, { userId, nickname });
+          set(state => ({
+              groupMembers: state.groupMembers.map(member => 
+                  member.userid === userId ? { ...member, nickname } : member
+              )
+          }));
+          toast.success("Đổi biệt danh thành công");
+      } catch (error) {
+          toast.error("Lỗi đổi biệt danh");
+      }
   },
 
   offMessage: () => {
     const socket = useAuthStore.getState().socket
-    socket.off('newMessage')
+    console.log("Off", socket.id)
+    if(socket) {
+      socket.off('newMessage')
+      socket.off('messagesSeen')
+    }
   },
 
-  // Clear messages khi đóng chat
-  clearMessages: () => set({ messages: [], selectedUser: null }),
+  unsubscribeFromMessages: () => {
+    const socket = useAuthStore.getState().socket
+    if(socket) {
+        socket.off('newMessage');
+        socket.off('new-group');
+        socket.off('messagesSeen');
+    }
+  },
+  
+  clearMessages: () => set({ messages: [], selectedUser: null, groupMembers: [] }),
 }))

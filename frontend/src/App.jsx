@@ -9,11 +9,12 @@ import HomePage from './pages/HomePage'
 import ProfilePage from './pages/ProfilePage'
 import SettingsPage from './pages/SettingsPage'
 import NotFoundPage from './pages/NotFoundPage'
+import VideoCallPage from './pages/VideoCallPage'
 
 import Navbar from './components/Navbar'
 
 function App() {
-  const { checkAuth, user, onlineUsers } = useAuthStore()
+  const { checkAuth, user } = useAuthStore()
 
   useEffect(() => {
     checkAuth()
@@ -24,6 +25,7 @@ function App() {
       <Navbar />
       <main className="flex-1 overflow-auto bg-base-100">
         <Toaster />
+        <VideoCallPage />
         <Routes>
           <Route
             path="/login"
