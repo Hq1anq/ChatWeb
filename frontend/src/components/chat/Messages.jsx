@@ -184,11 +184,12 @@ const Messages = ({ messages, onReply }) => {
               isPinned={isPinned}
               replyTo={replyTo}
               isForwarded={message.isForwarded}
-              senderName={message.nickname || message.sender?.fullname || message.fullname}
               message={message}
               onReply={handleReply}
               onPin={handlePin}
               onForward={handleForward}
+              senderProfilePic={message.sender?.profilepic || message.profilepic}
+              highlightRegex={highlightRegex}
             />
           </div>
         );

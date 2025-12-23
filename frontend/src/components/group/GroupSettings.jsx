@@ -5,19 +5,13 @@ import { useAuthStore } from "../../store/authStore";
 import { getProfilePic } from "../../lib/utils";
 
 const GroupSettings = ({ onClose }) => {
-  const { selectedUser, getGroupMembers, groupMembers, isMessagesLoading, updateNickname } = useChatStore();
+  const { selectedUser, groupMembers, isMessagesLoading, updateNickname } = useChatStore();
   const { user: currentUser } = useAuthStore();
   const [editingId, setEditingId] = useState(null);
   const [newNickname, setNewNickname] = useState("");
 
   // selectedUser ở đây đóng vai trò là Group Object
   const isGroup = selectedUser?.groupid !== undefined;
-
-  useEffect(() => {
-    if (isGroup) {
-      getGroupMembers(selectedUser.groupid);
-    }
-  }, [selectedUser, getGroupMembers, isGroup]);
 
   const handleStartEdit = (member) => {
       setEditingId(member.userid);

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Messages from './chat/Messages.jsx'
 import MessageInput from './chat/MessageInput.jsx'
 import GroupSettings from './group/GroupSettings.jsx' // Component bạn đã tạo
-import { Phone, Video, Info, Menu, ArrowLeft, Settings } from 'lucide-react'
+import { Video, Info, Menu, ArrowLeft, Settings } from 'lucide-react'
 import { useChatStore } from '../store/chatStore'
 import { useAuthStore } from '../store/authStore'
 import { getProfilePic } from '../lib/utils.js'
@@ -17,6 +17,7 @@ const MessageContainer = () => {
     onMessage,
     offMessage,
     openSidebar,
+    groupMembers,
     setSelectedUser,
     getGroupMembers,
   } = useChatStore()
@@ -147,7 +148,7 @@ const MessageContainer = () => {
               </span>
               <p className="text-xs text-base-content/60">
                 {isGroup
-                  ? `${selectedUser.members?.length || '3'} thành viên`
+                  ? `${groupMembers.length || '0'} thành viên`
                   : isOnline
                   ? 'Online'
                   : 'Offline'}
@@ -189,9 +190,7 @@ const MessageContainer = () => {
           )}
         </div>
 
-      <div className="divider m-0"></div>
-
-      {/* Messages area */}
+        {/* Messages area */}
         <div className="grow overflow-y-auto p-2 md:p-4 bg-base-200">
           {isLoadingMessages ? (
             <div className="flex justify-center items-center h-full">
@@ -216,10 +215,11 @@ const MessageContainer = () => {
 
         {/* Input */}
         <div className="p-2 md:p-4 bg-base-100">
-        <MessageInput 
-          replyingTo={replyingTo}
-          onCancelReply={handleCancelReply}
-        />
+          <MessageInput 
+            replyingTo={replyingTo}
+            onCancelReply={handleCancelReply}
+          />
+        </div>
       </div>
 
       {isGroup && showGroupSettings && (
@@ -227,7 +227,6 @@ const MessageContainer = () => {
           <GroupSettings onClose={() => setShowGroupSettings(false)} />
         </div>
       )}
-    </div>
     </div>
   )
 }

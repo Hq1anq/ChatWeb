@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuthStore } from '../../store/authStore'
 import { useChatStore } from '../../store/chatStore'
 import { isImageFile, getFileName } from '../../lib/utils'
@@ -95,11 +95,11 @@ const Message = ({
   isPinned = false,
   replyTo = null,
   isForwarded = false,
-  senderName = '',
   onReply,
   onPin,
   onForward,
-  message
+  message,
+  highlightRegex
 }) => {
   const [showLightbox, setShowLightbox] = useState(false)
   const [showReactionPicker, setShowReactionPicker] = useState(false)
@@ -114,11 +114,21 @@ const Message = ({
   const { selectedUser } = useChatStore()
   const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000'
 
-  const targetUser = fromMe ? user : selectedUser
+  const isGroup = selectedUser?.groupid !== undefined;
 
-  const profilePic = targetUser?.profilepic
-    ? `${serverUrl}${targetUser.profilepic}`
-    : `https://placehold.co/600x600/E5E7EB/333333?text=${targetUser?.fullname?.charAt(0) || '?'}`
+  let profilePic = ""; let senderName = ""; let avatarName = "";
+  if (fromMe) {
+    profilePic = user.profilepic; senderName = "Bạn"; avatarName = user.fullname;
+  } else {
+    if (isGroup) {
+      profilePic = message.sender?.profilepic || message.profilepic;
+      senderName = message.nickname || message.sender?.fullname || message.fullname || "Thành viên";
+      avatarName = message.sender?.fullname || message.fullname || senderName;
+    } else {
+      profilePic = selectedUser?.profilepic; senderName = selectedUser?.fullname; avatarName = senderName;
+    }
+  }
+  const profilePicUrl = profilePic ? `${serverUrl}${profilePic}` : `https://placehold.co/600x600/E5E7EB/333333?text=${avatarName?.charAt(0).toUpperCase() || '?'}`
 
   const fileName = getFileName(file)
   const isImage = isImageFile(file)
@@ -152,6 +162,26 @@ const Message = ({
     socket.on('messageReaction', handleReaction)
     return () => socket.off('messageReaction', handleReaction)
   }, [socket, messageId])
+
+  // Logic xử lý highlight text (Mentions)
+  const renderedContent = useMemo(() => {
+    if (!highlightRegex || !text) return text;
+
+    // Split text giữ lại phần khớp nhờ capturing group trong regex
+    const parts = text.split(highlightRegex);
+
+    return parts.map((part, index) => {
+      // Kiểm tra xem phần này có khớp regex không
+      if (part.match(highlightRegex)) {
+        return (
+          <span key={index} className="font-bold text-accent-content bg-accent hover:bg-accent/80 rounded px-1 mx-0.5 inline-block cursor-default">
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  }, [text, highlightRegex]);
 
   const handleDownload = async (e) => {
     e.preventDefault()
@@ -255,14 +285,10 @@ const Message = ({
   return (
     <>
       <div className={`chat ${alignment} group`}>
-        {/* Avatar */}
-        {!fromMe && (
-          <div className="chat-image avatar">
-            <div className="w-10 rounded-full border">
-              <img alt="User avatar" src={profilePic} />
-            </div>
-          </div>
-        )}
+        <div className="chat-image avatar hidden sm:block">
+          <div className="w-8 md:w-10 rounded-full border border-base-300"><img alt="User avatar" src={profilePicUrl} /></div>
+        </div>
+        {isGroup && !fromMe && <div className="chat-header mb-1"><span className="text-xs font-bold opacity-70 mr-1">{senderName}</span></div>}
 
         {/* Container cho bubble + reactions */}
         <div className="relative">
@@ -343,7 +369,7 @@ const Message = ({
                     onClick={() => setShowActionMenu(false)}
                   />
                   <div 
-                    className={`absolute z-50 bg-base-100 shadow-lg rounded-lg py-1 border border-base-300 min-w-[140px]
+                    className={`absolute z-50 bg-base-100 shadow-lg rounded-lg py-1 border border-base-300 min-w-35
                       ${fromMe ? 'right-0' : 'left-0'} bottom-full mb-1`}
                   >
                     <button
@@ -408,7 +434,7 @@ const Message = ({
                       title={`Tải xuống ${fileName}`}
                     >
                       <FileText size={20} className="shrink-0 text-base-content/80" />
-                      <span className="truncate max-w-[150px] font-medium text-sm text-base-content/80">
+                      <span className="truncate max-w-37.5 font-medium text-sm text-base-content/80">
                         {fileName}
                       </span>
                     </a>
@@ -427,8 +453,8 @@ const Message = ({
 
             {/* Hiển thị text */}
             {text && (
-              <p className="whitespace-pre-wrap break-words text-left min-w-0 inline">
-                {text}
+              <p className="whitespace-pre-wrap wrap-break-word text-left min-w-0 inline">
+                {renderedContent}
               </p>
             )}
           </div>

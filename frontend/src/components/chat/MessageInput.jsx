@@ -294,7 +294,7 @@ const MessageInput = ({ replyingTo, onCancelReply }) => {
                 {getFileIcon(fileAttachment.file)}
               </div>
             )}
-            <span className="truncate max-w-[150px] md:max-w-[200px] text-sm">{fileAttachment.file.name}</span>
+            <span className="truncate max-w-37.5 md:max-w-50 text-sm">{fileAttachment.file.name}</span>
           </div>
           <button type="button" onClick={removeFile} className="absolute -top-2 -right-2 btn btn-circle btn-xs btn-error">
             <X size={14} />
@@ -335,7 +335,7 @@ const MessageInput = ({ replyingTo, onCancelReply }) => {
               ? `Trả lời ${replyingTo.senderName}...` 
               : (isSendingMessage ? 'Đang gửi...' : 'Nhập tin nhắn...')
           }
-          className="textarea textarea-bordered w-full resize-none min-h-10 md:min-h-12 max-h-[120px] md:max-h-[150px] leading-normal py-2 md:py-3 text-sm md:text-base"
+          className="textarea textarea-bordered w-full resize-none min-h-10 md:min-h-12 max-h-30 md:max-h-37.5 leading-normal py-2 md:py-3 text-sm md:text-base"
           value={message}
           onChange={handleInput} 
           onKeyDown={handleKeyDown}

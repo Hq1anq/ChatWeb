@@ -31,6 +31,10 @@ export const useChatStore = create((set, get) => ({
       get().getMessages(id, isGroup)
       get().markMessagesAsSeen(id, isGroup)
 
+      if (isGroup) {
+        get().getGroupMembers(id); // Tự động load thành viên ngay khi chọn group
+      }
+
       if (typeof window !== 'undefined' && window.innerWidth < 768) {
         set({ isSidebarOpen: false })
       }
