@@ -22,7 +22,6 @@ export function formatTimeAgo(isoUTCString) {
   const diffHours = Math.floor(diffMinutes / 60)
   const diffDays = Math.floor(diffHours / 24)
   const diffWeeks = Math.floor(diffDays / 7)
-  const diffMonths = Math.floor(diffDays / 30)
 
   // Minutes
   if (diffMinutes < 60) return `${diffMinutes || 1}m` // show 1m minimum

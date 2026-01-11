@@ -19,10 +19,4 @@ export default defineConfig({
       plugins: [daisyui],
     }),
   ],
-  server: {
-    https: {
-      key: '../backend/cert.key',
-      cert: '../backend/cert.crt',
-    },
-  },
 })

@@ -4,6 +4,7 @@ import { useChatStore } from '../../store/chatStore'
 import { Pin, X } from 'lucide-react'
 import Message from './Message'
 import ForwardModal from './ForwardModal'
+import { formatTime } from '../../lib/utils.js'
 
 const isSameDay = (d1, d2) => {
     if (!d2) return false;
@@ -30,24 +31,6 @@ const formatDateLabel = (dateStr) => {
         timeZone: 'UTC' 
     });
 };
-
-const formatTime = (dateString, isTemp) => {
-    const date = new Date(dateString)
-    
-    if (isTemp) {
-        return date.toLocaleTimeString('vi-VN', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            timeZone: 'Asia/Ho_Chi_Minh'
-        })
-    }
-    
-    return date.toLocaleTimeString('vi-VN', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        timeZone: 'UTC' 
-    })
-}
 
 // Hàm xác định trạng thái tin nhắn
 const getMessageStatus = (message) => {
@@ -177,7 +160,7 @@ const Messages = ({ messages, onReply }) => {
               fromMe={isFromMe} 
               text={message.content}
               file={message.file}
-              time={formatTime(message.created, message.isTemp)}
+              time={formatTime(message.created)}
               isTemp={message.isTemp}
               reactions={message.reactions || []}
               status={getMessageStatus(message)}
