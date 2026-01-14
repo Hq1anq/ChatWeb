@@ -2,6 +2,7 @@ node_modules
 public
 docker-compose.yaml
 .env
+.env.production
 
 *.crt
 *.key

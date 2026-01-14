@@ -22,7 +22,7 @@ const server = http.createServer(app)
 initializeSocketIO(server, app)
 
 // Middleware
-app.use(express.static(path.join(__dirname, 'frontend/dist')))
+app.use(express.static(path.join(__dirname, '../frontend/dist')))
 app.use(express.json())
 app.use(cookieParser())
 
@@ -50,7 +50,7 @@ app.use(
 // Routes
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend/dist/index.html'))
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'))
 })
 app.use('/api/auth', authRoutes)
 app.use('/api/message', messageRoutes)
