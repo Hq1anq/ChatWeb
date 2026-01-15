@@ -1,6 +1,7 @@
 node_modules
 public
 .env
+.env.production
 
 *.crt
 *.key

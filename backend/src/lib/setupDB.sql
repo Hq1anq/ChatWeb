@@ -4,11 +4,18 @@ GO
 USE WEB;
 GO
 
-
+-- START_SCHEMA --
 DROP TABLE IF EXISTS dbo.Notifications;
 DROP TABLE IF EXISTS dbo.GroupMembers;
 DROP TABLE IF EXISTS dbo.Reactions;
-DROP TABLE IF EXISTS dbo.Messages;
+IF EXISTS (
+  SELECT 1 FROM sys.foreign_keys 
+  WHERE name = 'FK_Messages_ReplyTo'
+)
+BEGIN
+  ALTER TABLE dbo.Messages DROP CONSTRAINT FK_Messages_ReplyTo;
+  DROP TABLE dbo.Messages;
+END;
 DROP TABLE IF EXISTS dbo.Groups;
 DROP TABLE IF EXISTS dbo.Users;
 
@@ -104,7 +111,7 @@ CREATE TABLE dbo.Reactions (
 
   CONSTRAINT FK_Reactions_User
     FOREIGN KEY (userid)
-    REFERENCES dbo.Users(userid),
+    REFERENCES dbo.Users(userid)
 );
 
 
@@ -124,7 +131,7 @@ CREATE TABLE dbo.Notifications (
 GO
 
 CREATE TRIGGER trg_UpdateUserTimestamp
-ON Users
+ON dbo.Users
 AFTER UPDATE
 AS
 BEGIN
@@ -134,6 +141,8 @@ BEGIN
   FROM Users u
   INNER JOIN inserted i ON u.userid = i.userid;
 END;
+
+-- END_SCHEMA --
 
 SELECT * FROM dbo.Notifications;
 SELECT * FROM dbo.GroupMembers;
