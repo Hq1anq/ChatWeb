@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "dev": "node --env-file .env --watch src/server.js",
+    "dev": "node --env-file .env.production --watch src/server.js",
     "debug": "node --env-file .env --inspect src/server.js",
     "seedDB": "node --env-file .env src/lib/seedDB.js",
     "buildDB": "node --env-file .env src/lib/rebuildDB.js",
