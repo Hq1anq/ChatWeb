@@ -1,0 +1,18 @@
+services:
+  chatweb:
+    build: .
+    container_name: chatweb
+    restart: unless-stopped
+    env_file:
+      - backend/.env
+    ports:
+      - "5000:5000"
+    networks:
+      - shared_infra
+      - chatweb_public
+
+networks:
+  shared_infra:
+    external: true
+  chatweb_public:
+    name: chatweb_public
