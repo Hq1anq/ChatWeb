@@ -9,16 +9,13 @@ export const formatTime = (timestamp) => {
 }
 
 
-export function formatTimeAgo(isoUTCString) {
-  if (!isoUTCString) return '' // No timestamp
-
-  // force parse as local time if backend incorrectly uses Z
-  const safeString = isoUTCString.replace('Z', '')
+export function formatTimeAgo(timestamp) {
+  if (!timestamp) return '' // No timestamp
 
   const now = new Date() // current local time
-  const timestamp = new Date(safeString) // parsed from server (UTC ISO string)
+  const date = new Date(timestamp)
 
-  const diffMs = now.getTime() - timestamp.getTime() // ms difference
+  const diffMs = now.getTime() - date.getTime() // ms difference
   if (diffMs < 0) return '0m' // Future-safe fallback
 
   const diffMinutes = Math.floor(diffMs / 60000)

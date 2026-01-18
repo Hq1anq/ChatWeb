@@ -10,9 +10,9 @@ const isSameDay = (d1, d2) => {
     if (!d2) return false;
     const date1 = new Date(d1);
     const date2 = new Date(d2);
-    return date1.getUTCDate() === date2.getUTCDate() &&
-           date1.getUTCMonth() === date2.getUTCMonth() &&
-           date1.getUTCFullYear() === date2.getUTCFullYear();
+    return date1.getDate() === date2.getDate() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getFullYear() === date2.getFullYear();
 };
 
 const formatDateLabel = (dateStr) => {
@@ -24,12 +24,7 @@ const formatDateLabel = (dateStr) => {
     if (isSameDay(date, today)) return "Hôm nay";
     if (isSameDay(date, yesterday)) return "Hôm qua";
     
-    return date.toLocaleDateString("vi-VN", { 
-        day: "2-digit", 
-        month: "2-digit", 
-        year: "numeric",
-        timeZone: 'UTC' 
-    });
+    return formatTime(dateStr);
 };
 
 // Hàm xác định trạng thái tin nhắn
