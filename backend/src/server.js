@@ -31,7 +31,7 @@ app.use(
     origin: process.env.CLIENT_URL,
     credentials: true, // Cho phép gửi cookie
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 )
 
@@ -49,13 +49,14 @@ app.use(
 
 // Routes
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'))
-})
 app.use('/api/auth', authRoutes)
 app.use('/api/message', messageRoutes)
 app.use('/api/groups', groupRoutes) // <--- MỚI: Sử dụng route groups
 app.use('/api/notifications', notificationRoutes)
+
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'))
+})
 
 // Khởi chạy server
 server.listen(PORT, () => {
